@@ -1,0 +1,18 @@
+﻿{
+  "module_id": "UND-FIXTURE-DEP",
+  "module_name": "Invalid Dependency Fixture",
+  "objective": "Invalid dependency fixture.",
+  "inputs": [],
+  "dependencies": [{"module_id":"UND-MISSING","required":true}],
+  "authorized_actions": [],
+  "prohibited_actions": [],
+  "files_in_scope": [],
+  "commands": [],
+  "tests": [],
+  "acceptance_criteria": ["dependency fails"],
+  "evidence_requirements": [],
+  "expected_outputs": [],
+  "current_status": "NOT_STARTED",
+  "blocking_effect": false,
+  "resume_point": null
+}

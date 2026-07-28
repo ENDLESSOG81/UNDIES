@@ -1,0 +1,16 @@
+﻿{
+  "project_name": "{{PROJECT_NAME}}",
+  "project_code": "{{PROJECT_CODE}}",
+  "version": "0.1.0-alpha.1",
+  "build": "{{BUILD_TYPE}}",
+  "workspace_root": "{{WORKSPACE_ROOT}}",
+  "repository_state": "LOCAL ONLY",
+  "remote_state": "{{REMOTE_STATE}}",
+  "default_branch": "main",
+  "parent_authority": "Human operator",
+  "created_date": "{{CREATED_UTC}}",
+  "updated_date": "{{UPDATED_UTC}}",
+  "current_session": null,
+  "current_module": null,
+  "configuration_version": "0.1.0"
+}

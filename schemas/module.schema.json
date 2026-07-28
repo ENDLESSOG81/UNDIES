@@ -1,0 +1,73 @@
+﻿{
+    "$schema":  "https://json-schema.org/draft/2020-12/schema",
+    "type":  "object",
+    "required":  [
+                     "module_id",
+                     "module_name",
+                     "objective",
+                     "inputs",
+                     "dependencies",
+                     "authorized_actions",
+                     "prohibited_actions",
+                     "files_in_scope",
+                     "commands",
+                     "tests",
+                     "acceptance_criteria",
+                     "evidence_requirements",
+                     "expected_outputs",
+                     "current_status",
+                     "blocking_effect",
+                     "resume_point"
+                 ],
+    "properties":  {
+                       "module_id":  {
+                                         "type":  "string"
+                                     },
+                       "module_name":  {
+                                           "type":  "string"
+                                       },
+                       "objective":  {
+                                         "type":  "string"
+                                     },
+                       "inputs":  {
+                                      "type":  "array"
+                                  },
+                       "dependencies":  {
+                                            "type":  "array"
+                                        },
+                       "authorized_actions":  {
+                                                  "type":  "array"
+                                              },
+                       "prohibited_actions":  {
+                                                  "type":  "array"
+                                              },
+                       "files_in_scope":  {
+                                              "type":  "array"
+                                          },
+                       "commands":  {
+                                        "type":  "array"
+                                    },
+                       "tests":  {
+                                     "type":  "array"
+                                 },
+                       "acceptance_criteria":  {
+                                                   "type":  "array"
+                                               },
+                       "evidence_requirements":  {
+                                                     "type":  "array"
+                                                 },
+                       "expected_outputs":  {
+                                                "type":  "array"
+                                            },
+                       "current_status":  {
+                                              "type":  "string"
+                                          },
+                       "blocking_effect":  {
+
+                                           },
+                       "resume_point":  {
+
+                                        }
+                   },
+    "additionalProperties":  true
+}

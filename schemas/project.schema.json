@@ -1,0 +1,65 @@
+﻿{
+    "$schema":  "https://json-schema.org/draft/2020-12/schema",
+    "type":  "object",
+    "required":  [
+                     "project_name",
+                     "project_code",
+                     "version",
+                     "build",
+                     "workspace_root",
+                     "repository_state",
+                     "remote_state",
+                     "default_branch",
+                     "parent_authority",
+                     "created_date",
+                     "updated_date",
+                     "current_session",
+                     "current_module",
+                     "configuration_version"
+                 ],
+    "properties":  {
+                       "project_name":  {
+                                            "type":  "string"
+                                        },
+                       "project_code":  {
+                                            "type":  "string"
+                                        },
+                       "version":  {
+                                       "type":  "string"
+                                   },
+                       "build":  {
+                                     "type":  "string"
+                                 },
+                       "workspace_root":  {
+                                              "type":  "string"
+                                          },
+                       "repository_state":  {
+                                                "type":  "string"
+                                            },
+                       "remote_state":  {
+                                            "type":  "string"
+                                        },
+                       "default_branch":  {
+                                              "type":  "string"
+                                          },
+                       "parent_authority":  {
+                                                "type":  "string"
+                                            },
+                       "created_date":  {
+                                            "type":  "string"
+                                        },
+                       "updated_date":  {
+                                            "type":  "string"
+                                        },
+                       "current_session":  {
+
+                                           },
+                       "current_module":  {
+
+                                          },
+                       "configuration_version":  {
+                                                     "type":  "string"
+                                                 }
+                   },
+    "additionalProperties":  true
+}

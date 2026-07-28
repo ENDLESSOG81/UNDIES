@@ -1,0 +1,19 @@
+﻿{
+    "$schema":  "https://json-schema.org/draft/2020-12/schema",
+    "type":  "object",
+    "required":  [
+                     "session_id",
+                     "project_name",
+                     "project_code",
+                     "project_version",
+                     "workspace",
+                     "start_time_local",
+                     "start_time_utc",
+                     "current_module",
+                     "completed_modules",
+                     "pending_modules",
+                     "resume_point",
+                     "final_status"
+                 ],
+    "additionalProperties":  true
+}

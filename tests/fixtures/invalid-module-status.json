@@ -1,0 +1,18 @@
+﻿{
+  "module_id": "UND-FIXTURE-BAD",
+  "module_name": "Invalid Fixture",
+  "objective": "Invalid status fixture.",
+  "inputs": [],
+  "dependencies": [],
+  "authorized_actions": [],
+  "prohibited_actions": [],
+  "files_in_scope": [],
+  "commands": [],
+  "tests": [],
+  "acceptance_criteria": [],
+  "evidence_requirements": [],
+  "expected_outputs": [],
+  "current_status": "NOT_A_STATUS",
+  "blocking_effect": false,
+  "resume_point": null
+}

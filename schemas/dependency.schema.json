@@ -1,0 +1,21 @@
+﻿{
+    "$schema":  "https://json-schema.org/draft/2020-12/schema",
+    "type":  "object",
+    "required":  [
+                     "dependency_id",
+                     "dependency_type",
+                     "exact_name",
+                     "reason_required",
+                     "expected_value_or_format",
+                     "sensitive",
+                     "source_or_owner",
+                     "manual_action",
+                     "powershell_action",
+                     "validation_command",
+                     "success_condition",
+                     "failure_condition",
+                     "resume_module",
+                     "resume_checkpoint"
+                 ],
+    "additionalProperties":  true
+}

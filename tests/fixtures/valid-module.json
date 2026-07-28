@@ -1,0 +1,18 @@
+﻿{
+  "module_id": "UND-FIXTURE-001",
+  "module_name": "Valid Fixture",
+  "objective": "Prove the contract accepts a complete module.",
+  "inputs": [],
+  "dependencies": [],
+  "authorized_actions": [],
+  "prohibited_actions": [],
+  "files_in_scope": [],
+  "commands": [],
+  "tests": [],
+  "acceptance_criteria": ["fixture parses"],
+  "evidence_requirements": [],
+  "expected_outputs": [],
+  "current_status": "NOT_STARTED",
+  "blocking_effect": false,
+  "resume_point": null
+}

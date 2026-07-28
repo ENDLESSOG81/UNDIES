@@ -1,0 +1,19 @@
+﻿{
+  "module_id": "{{MODULE_ID}}",
+  "module_name": "{{MODULE_NAME}}",
+  "objective": "{{OBJECTIVE}}",
+  "description": "{{DESCRIPTION}}",
+  "inputs": [],
+  "dependencies": [],
+  "authorized_actions": [],
+  "prohibited_actions": [],
+  "files_in_scope": [],
+  "commands": [],
+  "tests": [],
+  "acceptance_criteria": [],
+  "evidence_requirements": [],
+  "expected_outputs": [],
+  "current_status": "NOT_STARTED",
+  "blocking_effect": false,
+  "resume_point": null
+}

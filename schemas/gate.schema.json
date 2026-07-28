@@ -1,0 +1,18 @@
+﻿{
+    "$schema":  "https://json-schema.org/draft/2020-12/schema",
+    "type":  "object",
+    "required":  [
+                     "status",
+                     "decision_timestamp_utc",
+                     "module_id",
+                     "validation_results",
+                     "failed_checks",
+                     "warnings",
+                     "blocking_effect",
+                     "continuation_decision",
+                     "decision_reason",
+                     "evidence_references",
+                     "resume_requirement"
+                 ],
+    "additionalProperties":  true
+}
