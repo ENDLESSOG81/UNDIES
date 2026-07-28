@@ -1,6 +1,6 @@
 ﻿param(
     [Parameter(Position=0)]
-    [ValidateSet('initialize','doctor','status','session-start','session-close','blue-report','resume','adopt','configure','version','upgrade','help')]
+    [ValidateSet('initialize','doctor','status','session-start','session-close','blue-report','resume','adopt','configure','version','upgrade','integrity','repair','help')]
     [string]$Command = 'help',
     [string]$SessionId,
     [switch]$DependencyValidated,
@@ -14,7 +14,8 @@
     [string]$ProjectPurpose,
     [string]$ProjectVersion,
     [switch]$Check,
-    [switch]$Apply
+    [switch]$Apply,
+    [switch]$Detailed
 )
 function Get-UndiesUtcTime { [DateTime]::UtcNow.ToString('o') }
 function Get-UndiesCentralTime { try { $tz=[TimeZoneInfo]::FindSystemTimeZoneById('Central Standard Time'); [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow,$tz).ToString('o') } catch { Get-UndiesUtcTime } }
@@ -29,6 +30,8 @@ function Get-PortableGitInfo($Root){ if(-not(Test-Path (Join-Path $Root '.git'))
 function Invoke-PortableAdoption($Root){ $inventory=@(Get-PortableInventory $Root); $conflicts=@(); if(Test-Path (Join-Path $Root '.undies/config/project.json')){$conflicts += 'Existing UNDIES manifest'}; $proposal=[ordered]@{ mode=if($DryRun){'DRY_RUN'}elseif($Preview){'PREVIEW'}elseif($Confirm){'APPLY'}else{'PREVIEW'}; project_name=if($ProjectName){$ProjectName}else{Split-Path -Leaf $Root}; project_code=if($ProjectCode){$ProjectCode}else{'UND'}; existing_file_count=$inventory.Count; conflicts=$conflicts; files_to_create=@('.undies/config/project.json','.undies/adoption/baseline.json','.undies/recovery/rollback-manifest.json'); untouched_files=@($inventory.path); git=(Get-PortableGitInfo $Root); recommended_gitignore=@('.undies/','*.log','.env','.env.*'); proposed_git_actions=@('No automatic git add, commit, push, pull, merge, reset, checkout, restore, clean, stash, or branch changes') }
     if($DryRun -or $Preview -or -not $Confirm){ return $proposal }
     Initialize-Portable $Root|Out-Null; New-Item -ItemType Directory -Force -Path (Join-Path $Root '.undies/adoption')|Out-Null; Save-Json (Join-Path $Root '.undies/adoption/baseline.json') ([ordered]@{created_utc=Get-UndiesUtcTime; inventory=$inventory; git=$proposal.git}); Save-Json (Join-Path $Root '.undies/recovery/rollback-manifest.json') ([ordered]@{created_utc=Get-UndiesUtcTime; operation='adoption'; managed_files=$proposal.files_to_create; host_files_preserved=@($inventory.path)}); return $proposal }
+function Test-PortableIntegrity($Root){ $issues=@(); foreach($d in @('.undies/config','.undies/governance','.undies/sessions','.undies/evidence','.undies/reports','.undies/recovery')){ if(-not(Test-Path (Join-Path $Root $d))){$issues += "Missing directory $d"} }; $manifest=Join-Path $Root '.undies/config/project.json'; if(-not(Test-Path $manifest)){$issues += 'Missing project manifest'}else{try{Read-Json $manifest|Out-Null}catch{$issues += 'Corrupt project manifest'}}; if(-not(Test-Path (Join-Path $Root '.undies/governance/UNDIES_CHARTER.md'))){$issues += 'Missing governance charter'}; [pscustomobject]@{status=if($issues.Count){'YELLOW'}else{'GREEN'};issues=$issues;blue_compatible=$true;checked_utc=Get-UndiesUtcTime} }
+function Invoke-PortableRepair($Root){ $integrity=Test-PortableIntegrity $Root; $plan=[ordered]@{status=if($integrity.issues.Count){'YELLOW'}else{'GREEN'};issues=$integrity.issues;repairs=@();preview=(!$Apply)}; foreach($i in $integrity.issues){ if($i -match 'Missing governance charter'){$plan.repairs += 'Restore governance charter'}; if($i -match 'Missing project manifest|Corrupt project manifest'){$plan.repairs += 'Restore project manifest'} }; if($Preview -or -not $Apply){ return $plan }; $backup=Join-Path $Root ('.undies/repair/backups/' + (Get-Date -Format yyyyMMddHHmmss)); New-Item -ItemType Directory -Force -Path $backup|Out-Null; if(Test-Path (Join-Path $Root '.undies/config')){Copy-Item (Join-Path $Root '.undies/config') $backup -Recurse -Force}; $manifest=Join-Path $Root '.undies/config/project.json'; try{ if(Test-Path $manifest){ Read-Json $manifest|Out-Null } }catch{ Remove-Item $manifest -Force }; Initialize-Portable $Root|Out-Null; $gov=Join-Path $Root '.undies/governance/UNDIES_CHARTER.md'; if(-not(Test-Path $gov)){ 'UNDIES portable governance. Repaired.'|Set-Content $gov -Encoding UTF8 }; Save-Json (Join-Path $Root '.undies/reports/repair-report.json') ([ordered]@{status='GREEN';backup=$backup;repairs=$plan.repairs}); Test-PortableIntegrity $Root }
 function Compare-VersionText([string]$A,[string]$B){ $pa=($A -replace '-.*$','').Split('.')|ForEach-Object{[int]$_}; $pb=($B -replace '-.*$','').Split('.')|ForEach-Object{[int]$_}; for($i=0;$i -lt 3;$i++){ if($pa[$i] -lt $pb[$i]){return -1}; if($pa[$i] -gt $pb[$i]){return 1} }; return 0 }
 function Invoke-PortableVersion($Root){ $manifest=Join-Path $Root '.undies/config/project.json'; $installed=if(Test-Path $manifest){(Read-Json $manifest).version}else{'NONE'}; [pscustomobject]@{portable_version='0.1.0-alpha.2';installed_version=$installed;schema_version='0.1.0'} }
 function Invoke-PortableUpgrade($Root){ Initialize-Portable $Root|Out-Null; $manifest=Join-Path $Root '.undies/config/project.json'; $m=Read-Json $manifest; $cmp=Compare-VersionText $m.version '0.1.0-alpha.2'; if($cmp -gt 0){ return [pscustomobject]@{status='BLUE';reason='Installed UNDIES version is newer than portable bootstrap';installed_version=$m.version;portable_version='0.1.0-alpha.2';manual_action='Use a matching or newer UNDIES bootstrap';validation_command='.\UNDIES.ps1 version';resume_checkpoint='upgrade-version-compatible'} }
@@ -56,7 +59,7 @@ $Root=Split-Path -Parent $MyInvocation.MyCommand.Path
 switch($Command){
  'help' { 'UNDIES portable bootstrap 0.1.0-alpha.2. BLUE is a safe pause, distinct from BLOCKED and RED. WAITING_FOR_EXTERNAL_DEPENDENCY normalizes to BLUE.' }
  'initialize' { Initialize-Portable $Root | ConvertTo-Json -Depth 20 }
- 'doctor' { Initialize-Portable $Root|Out-Null; @{status='GREEN';version='0.1.0-alpha.2';blue='supported';legacy_alias='WAITING_FOR_EXTERNAL_DEPENDENCY=>BLUE';workspace=(Resolve-Path $Root).Path;portable=$true} | ConvertTo-Json -Depth 10 }
+ 'doctor' { Initialize-Portable $Root|Out-Null; if($Detailed){ Test-PortableIntegrity $Root | ConvertTo-Json -Depth 20 } else { @{status='GREEN';version='0.1.0-alpha.2';blue='supported';legacy_alias='WAITING_FOR_EXTERNAL_DEPENDENCY=>BLUE';workspace=(Resolve-Path $Root).Path;portable=$true} | ConvertTo-Json -Depth 10 } }
  'status' { @{workspace=(Resolve-Path $Root).Path;statuses=@('GREEN','YELLOW','BLUE','RED','BLOCKED');sessions=@(Get-ChildItem (Join-Path $Root '.undies/sessions') -Filter '*.json' -ErrorAction SilentlyContinue|ForEach-Object{Read-Json $_.FullName}|Select-Object session_id,status)} | ConvertTo-Json -Depth 10 }
  'session-start' { New-PortableSession $Root | ConvertTo-Json -Depth 20 }
  'session-close' { Close-PortableSession $Root $SessionId | ConvertTo-Json -Depth 20 }
@@ -66,7 +69,11 @@ switch($Command){
  'configure' { Invoke-PortableConfigure $Root | ConvertTo-Json -Depth 20 }
  'version' { Invoke-PortableVersion $Root | ConvertTo-Json -Depth 10 }
  'upgrade' { Invoke-PortableUpgrade $Root | ConvertTo-Json -Depth 20 }
+ 'integrity' { Test-PortableIntegrity $Root | ConvertTo-Json -Depth 20 }
+ 'repair' { Invoke-PortableRepair $Root | ConvertTo-Json -Depth 20 }
 }
+
+
 
 
 
