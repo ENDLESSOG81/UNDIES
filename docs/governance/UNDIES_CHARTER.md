@@ -13,3 +13,9 @@ Human authorization controls sensitive, destructive, remote, credentialed, deplo
 UNDIES records evidence for what it did, what changed, what passed, what failed, and why. Recovery must preserve completed modules and resume from the correct stopped checkpoint when safe.
 
 This foundation build assumes no GitHub repository exists. Git and deployment operations are prohibited during mission `UND-FOUNDATION-001`.
+
+## BLUE Gate Restoration
+
+BLUE is the canonical UNDIES safe-pause gate. BLUE means execution reached a safe checkpoint and cannot continue until an exact dependency, authorization, decision, resource, credential, configuration value, external service action, or operator input is provided and validated. BLUE is not RED and is not BLOCKED: RED is a failure after execution, while BLOCKED prevents implementation from beginning.
+
+`WAITING_FOR_EXTERNAL_DEPENDENCY` is a deprecated legacy alias. Historical records using it remain readable and normalize internally to BLUE. New records must write BLUE.

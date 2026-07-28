@@ -14,5 +14,21 @@
                      "evidence_references",
                      "resume_requirement"
                  ],
-    "additionalProperties":  true
+    "additionalProperties":  true,
+    "status_values":  [
+                          "NOT_STARTED",
+                          "PREFLIGHT",
+                          "IN_PROGRESS",
+                          "VALIDATING",
+                          "GREEN",
+                          "YELLOW",
+                          "BLUE",
+                          "RED",
+                          "BLOCKED",
+                          "STOPPED",
+                          "COMPLETE"
+                      ],
+    "legacy_status_aliases":  {
+                                  "WAITING_FOR_EXTERNAL_DEPENDENCY":  "BLUE"
+                              }
 }

@@ -17,3 +17,7 @@ Evidence summary: {{EVIDENCE_SUMMARY}}
 Git actions: {{GIT_ACTIONS}}
 Remaining work: {{REMAINING_WORK}}
 Final verdict: {{FINAL_VERDICT}}
+
+BLUE total: {{BLUE_TOTAL}}
+Legacy alias note: {{LEGACY_ALIAS_NOTE}}
+

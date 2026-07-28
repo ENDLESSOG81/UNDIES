@@ -1,166 +1,19 @@
 ﻿Set-StrictMode -Version 2.0
 
-function Get-UndiesRoot {
-    param([string]$StartPath = (Get-Location).Path)
-    return (Resolve-Path -LiteralPath $StartPath).Path
-}
-
-function Get-UndiesCentralTime {
-    $utc = [DateTime]::UtcNow
-    try { $tz = [TimeZoneInfo]::FindSystemTimeZoneById('Central Standard Time'); return [TimeZoneInfo]::ConvertTimeFromUtc($utc, $tz).ToString('o') }
-    catch { return $utc.ToString('o') }
-}
-
+function Get-UndiesRoot { param([string]$StartPath = (Get-Location).Path) return (Resolve-Path -LiteralPath $StartPath).Path }
+function Get-UndiesCentralTime { $utc = [DateTime]::UtcNow; try { $tz = [TimeZoneInfo]::FindSystemTimeZoneById('Central Standard Time'); return [TimeZoneInfo]::ConvertTimeFromUtc($utc, $tz).ToString('o') } catch { return $utc.ToString('o') } }
 function Get-UndiesUtcTime { return [DateTime]::UtcNow.ToString('o') }
-
-function Get-UndiesStatusValues {
-    return @('NOT_STARTED','PREFLIGHT','IN_PROGRESS','VALIDATING','GREEN','YELLOW','RED','BLOCKED','WAITING_FOR_EXTERNAL_DEPENDENCY','STOPPED','COMPLETE')
-}
-
-function Test-UndiesPathInsideRoot {
-    param([Parameter(Mandatory=$true)][string]$Root,[Parameter(Mandatory=$true)][string]$Path)
-    $rootFull = [IO.Path]::GetFullPath($Root).TrimEnd('\') + '\'
-    $pathFull = [IO.Path]::GetFullPath((Join-Path $Root $Path))
-    return $pathFull.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)
-}
-
-function Assert-UndiesWorkspaceSafe {
-    param([string]$Root = (Get-Location).Path)
-    $resolved = (Resolve-Path -LiteralPath $Root).Path
-    if ($resolved -match '(?i)\\OneDrive( - [^\\]+)?\\') { throw "RED: Workspace is inside OneDrive: $resolved" }
-    if ($resolved -match '^[A-Z]:\\(Windows|Program Files|Program Files \(x86\)|Users\\Default)(\\|$)') { throw "RED: Protected system path: $resolved" }
-    if ((Split-Path -Leaf $resolved) -ieq 'UNDIES' -and (Test-Path -LiteralPath (Join-Path $resolved 'UNDIES'))) { throw "RED: Nested UNDIES folder detected." }
-    $test = Join-Path $resolved '.undies-write-check.tmp'
-    try { 'ok' | Set-Content -LiteralPath $test -NoNewline -ErrorAction Stop; Remove-Item -LiteralPath $test -Force -ErrorAction Stop } catch { throw "RED: Workspace is not writable: $($_.Exception.Message)" }
-    return $true
-}
-
-function New-UndiesDirectoryStructure {
-    param([string]$Root = (Get-Location).Path)
-    $dirs = @('config','docs/architecture','docs/governance','docs/operations','docs/specifications','schemas','src/bootstrap','src/session','src/modules','src/gates','src/dependencies','src/evidence','src/reporting','src/recovery','templates/project','templates/modules','templates/reports','tests/foundation','tests/fixtures','examples/foundation-demo','.undies/config','.undies/runtime','.undies/sessions','.undies/evidence','.undies/reports','.undies/recovery')
-    foreach ($d in $dirs) {
-        if (-not (Test-UndiesPathInsideRoot -Root $Root -Path $d)) { throw "Refusing to create outside workspace: $d" }
-        New-Item -ItemType Directory -Force -Path (Join-Path $Root $d) | Out-Null
-    }
-}
-
-function ConvertTo-UndiesJson { param([Parameter(ValueFromPipeline=$true)]$InputObject) process { $InputObject | ConvertTo-Json -Depth 20 } }
-
-function Save-UndiesJsonAtomic {
-    param([Parameter(Mandatory=$true)][string]$Path,[Parameter(Mandatory=$true)]$Data)
-    $dir = Split-Path -Parent $Path
-    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
-    $tmp = Join-Path $dir ('.tmp-' + [Guid]::NewGuid().ToString('N') + '.json')
-    $Data | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $tmp -Encoding UTF8
-    Move-Item -LiteralPath $tmp -Destination $Path -Force
-}
-
-function Read-UndiesJson {
-    param([Parameter(Mandatory=$true)][string]$Path)
-    try { return (Get-Content -LiteralPath $Path -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop) }
-    catch { throw "Invalid JSON or unreadable file '$Path': $($_.Exception.Message)" }
-}
-
-function Protect-UndiesText {
-    param([AllowNull()][string]$Text)
-    if ($null -eq $Text) { return $null }
-    $patterns = @('(?i)Bearer\s+[A-Za-z0-9._~+/=-]+','(?i)"(api[_-]?key|token|password|secret|authorization|cookie)"\s*:\s*"[^"]*"','(?i)\b(api[_-]?key|token|password|secret|authorization|cookie)\b\s*[:=]\s*[^\s;,''"}]+','(?is)-----BEGIN [^-]+PRIVATE KEY-----.*?-----END [^-]+PRIVATE KEY-----','(?i)(Server|Data Source)=.+;.*(Password|Pwd)=.+')
-    $result = $Text
-    foreach ($p in $patterns) { $result = [Regex]::Replace($result, $p, '[REDACTED]') }
-    return $result
-}
-
-function Test-UndiesContracts {
-    param([string]$Root = (Get-Location).Path,[string[]]$ModuleFiles = @())
-    $errors = New-Object System.Collections.ArrayList
-    $required = @('README.md','VERSION','CHANGELOG.md','config/defaults.json','templates/project/project.template.json','templates/modules/module.template.json')
-    foreach ($r in $required) { if (-not (Test-Path -LiteralPath (Join-Path $Root $r))) { [void]$errors.Add("Missing required file: $r") } }
-    Get-ChildItem -LiteralPath (Join-Path $Root 'schemas') -Filter '*.json' -ErrorAction SilentlyContinue | ForEach-Object { try { $null = Read-UndiesJson $_.FullName } catch { [void]$errors.Add($_.Exception.Message) } }
-    foreach ($j in @('config/defaults.json','templates/project/project.template.json','templates/modules/module.template.json')) { try { $null = Read-UndiesJson (Join-Path $Root $j) } catch { [void]$errors.Add($_.Exception.Message) } }
-    $seen = @{}
-    foreach ($mf in $ModuleFiles) {
-        try {
-            $m = Read-UndiesJson $mf
-            if (-not $m.module_id -and -not $m.id) { [void]$errors.Add("Module ID is blank: $mf") }
-            $id = if ($m.module_id) { $m.module_id } else { $m.id }
-            if ($seen.ContainsKey($id)) { [void]$errors.Add("Duplicate module ID: $id") } else { $seen[$id] = $true }
-            $status = if ($m.current_status) { $m.current_status } else { $m.status }
-            if ($status -and ((Get-UndiesStatusValues) -notcontains $status)) { [void]$errors.Add("Invalid status '$status' in $mf") }
-            foreach ($field in @('module_name','objective','acceptance_criteria')) { if (-not ($m.PSObject.Properties.Name -contains $field)) { [void]$errors.Add("Missing module field '$field' in $mf") } }
-        } catch { [void]$errors.Add($_.Exception.Message) }
-    }
-    return [pscustomobject]@{ Passed = ($errors.Count -eq 0); Errors = @($errors); CheckedAtUtc = Get-UndiesUtcTime }
-}
-
-function Initialize-UndiesProject {
-    param([string]$Root = (Get-Location).Path)
-    Assert-UndiesWorkspaceSafe -Root $Root | Out-Null
-    New-UndiesDirectoryStructure -Root $Root
-    $manifestPath = Join-Path $Root '.undies/config/project.json'
-    if (-not (Test-Path -LiteralPath $manifestPath)) {
-        $now = Get-UndiesUtcTime
-        $manifest = [ordered]@{ project_name='UNDIES'; project_code='UND'; version='0.1.0-alpha.1'; build='Local foundation and working prototype'; workspace_root=(Resolve-Path -LiteralPath $Root).Path; repository_state='NOT CREATED'; remote_state='NONE'; default_branch='NONE'; parent_authority='Human operator'; created_date=$now; updated_date=$now; current_session=$null; current_module=$null; configuration_version='0.1.0' }
-        Save-UndiesJsonAtomic -Path $manifestPath -Data $manifest
-    }
-    return Read-UndiesJson $manifestPath
-}
-
-function Invoke-UndiesDoctor {
-    param([string]$Root = (Get-Location).Path)
-    $checks = New-Object System.Collections.ArrayList
-    function AddCheck($Name,$Passed,$Detail) { [void]$checks.Add([pscustomobject]@{ name=$Name; passed=[bool]$Passed; detail=$Detail }) }
-    try { Assert-UndiesWorkspaceSafe -Root $Root | Out-Null; AddCheck 'workspace_write_access' $true 'Writable and safe' } catch { AddCheck 'workspace_write_access' $false $_.Exception.Message }
-    AddCheck 'powershell_version' ($PSVersionTable.PSVersion.Major -ge 5) ($PSVersionTable.PSVersion.ToString())
-    $contract = Test-UndiesContracts -Root $Root
-    AddCheck 'contracts' $contract.Passed (($contract.Errors -join '; '))
-    $git = Get-Command git -ErrorAction SilentlyContinue
-    if ($git) { $gitDetail = $git.Source } else { $gitDetail = 'Git not found; optional for foundation' }
-    AddCheck 'git_available_optional' ($null -ne $git) $gitDetail
-    $repoExists = Test-Path -LiteralPath (Join-Path $Root '.git')
-    if ($repoExists) { $repoDetail = 'LOCAL ONLY' } else { $repoDetail = 'NOT CREATED' }
-    AddCheck 'repository_state' $repoExists $repoDetail
-    $oneDrive = ((Resolve-Path -LiteralPath $Root).Path -match '(?i)\\OneDrive( - [^\\]+)?\\')
-    if ($oneDrive) { $oneDriveDetail = 'OneDrive path detected' } else { $oneDriveDetail = 'No OneDrive path detected' }
-    AddCheck 'onedrive_warning' (-not $oneDrive) $oneDriveDetail
-    $sessionHealth = Test-Path -LiteralPath (Join-Path $Root '.undies/sessions')
-    AddCheck 'session_health' $sessionHealth 'Session directory check'
-    $evidenceHealth = Test-Path -LiteralPath (Join-Path $Root '.undies/evidence')
-    AddCheck 'evidence_health' $evidenceHealth 'Evidence directory check'
-    $failed = @($checks | Where-Object { -not $_.passed -and $_.name -notin @('git_available_optional','repository_state') })
-    return [pscustomobject]@{ status = if ($failed.Count -eq 0) { 'GREEN' } else { 'RED' }; checks = @($checks); generated_utc = Get-UndiesUtcTime }
-}
-
-
-
-
-function Test-UndiesContracts {
-    param([string]$Root = (Get-Location).Path,[string[]]$ModuleFiles = @())
-    $errors = New-Object System.Collections.ArrayList
-    $required = @('README.md','VERSION','CHANGELOG.md','config/defaults.json','templates/project/project.template.json','templates/modules/module.template.json')
-    foreach ($r in $required) { if (-not (Test-Path -LiteralPath (Join-Path $Root $r))) { [void]$errors.Add("Missing required file: $r") } }
-    foreach ($j in @('config/defaults.json','templates/project/project.template.json','templates/modules/module.template.json')) { try { $null = Read-UndiesJson (Join-Path $Root $j) } catch { [void]$errors.Add($_.Exception.Message) } }
-    Get-ChildItem -LiteralPath (Join-Path $Root 'schemas') -Filter '*.json' -ErrorAction SilentlyContinue | ForEach-Object { try { $null = Read-UndiesJson $_.FullName } catch { [void]$errors.Add($_.Exception.Message) } }
-    $seen = @{}
-    $modules = @()
-    foreach ($mf in $ModuleFiles) {
-        try {
-            $m = Read-UndiesJson $mf
-            $id = if ($m.module_id) { $m.module_id } else { $m.id }
-            if ([string]::IsNullOrWhiteSpace($id)) { [void]$errors.Add("Module ID is blank: $mf") }
-            elseif ($seen.ContainsKey($id)) { [void]$errors.Add("Duplicate module ID: $id") }
-            else { $seen[$id] = $true }
-            $modules += [pscustomobject]@{ file=$mf; id=$id; data=$m }
-            $status = if ($m.current_status) { $m.current_status } else { $m.status }
-            if ($status -and ((Get-UndiesStatusValues) -notcontains $status)) { [void]$errors.Add("Invalid status '$status' in $mf") }
-            foreach ($field in @('module_name','objective','inputs','dependencies','authorized_actions','prohibited_actions','files_in_scope','commands','tests','acceptance_criteria','evidence_requirements','expected_outputs','current_status','blocking_effect','resume_point')) {
-                if (-not ($m.PSObject.Properties.Name -contains $field)) { [void]$errors.Add("Missing module field '$field' in $mf") }
-            }
-        } catch { [void]$errors.Add($_.Exception.Message) }
-    }
-    foreach ($entry in $modules) {
-        foreach ($dep in @($entry.data.dependencies)) {
-            if ($dep.module_id -and -not $seen.ContainsKey($dep.module_id)) { [void]$errors.Add("Invalid dependency reference '$($dep.module_id)' in $($entry.file)") }
-        }
-    }
-    return [pscustomobject]@{ Passed = ($errors.Count -eq 0); Errors = @($errors); CheckedAtUtc = Get-UndiesUtcTime }
-}
+function Get-UndiesCanonicalStatusValues { return @('NOT_STARTED','PREFLIGHT','IN_PROGRESS','VALIDATING','GREEN','YELLOW','BLUE','RED','BLOCKED','STOPPED','COMPLETE') }
+function Get-UndiesLegacyStatusAliases { return @{ WAITING_FOR_EXTERNAL_DEPENDENCY = 'BLUE' } }
+function Get-UndiesStatusValues { return (Get-UndiesCanonicalStatusValues) + @('WAITING_FOR_EXTERNAL_DEPENDENCY') }
+function ConvertTo-UndiesCanonicalStatus { param([string]$Status) $aliases=Get-UndiesLegacyStatusAliases; if($aliases.ContainsKey($Status)){ return $aliases[$Status] }; return $Status }
+function Test-UndiesKnownStatus { param([string]$Status) return ((Get-UndiesStatusValues) -contains $Status) }
+function Test-UndiesPathInsideRoot { param([Parameter(Mandatory=$true)][string]$Root,[Parameter(Mandatory=$true)][string]$Path) $rootFull=[IO.Path]::GetFullPath($Root).TrimEnd('\')+'\'; $pathFull=[IO.Path]::GetFullPath((Join-Path $Root $Path)); return $pathFull.StartsWith($rootFull,[StringComparison]::OrdinalIgnoreCase) }
+function Assert-UndiesWorkspaceSafe { param([string]$Root=(Get-Location).Path) $resolved=(Resolve-Path -LiteralPath $Root).Path; if($resolved -match '(?i)\\OneDrive( - [^\\]+)?\\'){throw "RED: Workspace is inside OneDrive: $resolved"}; if($resolved -match '^[A-Z]:\\(Windows|Program Files|Program Files \(x86\)|Users\\Default)(\\|$)'){throw "RED: Protected system path: $resolved"}; if((Split-Path -Leaf $resolved) -ieq 'UNDIES' -and (Test-Path -LiteralPath (Join-Path $resolved 'UNDIES'))){throw 'RED: Nested UNDIES folder detected.'}; $test=Join-Path $resolved '.undies-write-check.tmp'; try{'ok'|Set-Content -LiteralPath $test -NoNewline -ErrorAction Stop; Remove-Item -LiteralPath $test -Force -ErrorAction Stop}catch{throw "RED: Workspace is not writable: $($_.Exception.Message)"}; return $true }
+function New-UndiesDirectoryStructure { param([string]$Root=(Get-Location).Path) $dirs=@('config','docs/architecture','docs/governance','docs/operations','docs/specifications','schemas','src/bootstrap','src/session','src/modules','src/gates','src/dependencies','src/evidence','src/reporting','src/recovery','templates/project','templates/modules','templates/reports','tests/foundation','tests/fixtures','examples/foundation-demo','.undies/config','.undies/runtime','.undies/sessions','.undies/evidence','.undies/reports','.undies/recovery'); foreach($d in $dirs){ if(-not(Test-UndiesPathInsideRoot -Root $Root -Path $d)){throw "Refusing to create outside workspace: $d"}; New-Item -ItemType Directory -Force -Path (Join-Path $Root $d)|Out-Null } }
+function Save-UndiesJsonAtomic { param([Parameter(Mandatory=$true)][string]$Path,[Parameter(Mandatory=$true)]$Data) $dir=Split-Path -Parent $Path; if(-not(Test-Path -LiteralPath $dir)){New-Item -ItemType Directory -Force -Path $dir|Out-Null}; $tmp=Join-Path $dir ('.tmp-'+[Guid]::NewGuid().ToString('N')+'.json'); $Data|ConvertTo-Json -Depth 30|Set-Content -LiteralPath $tmp -Encoding UTF8; Move-Item -LiteralPath $tmp -Destination $Path -Force }
+function Read-UndiesJson { param([Parameter(Mandatory=$true)][string]$Path) try { return (Get-Content -LiteralPath $Path -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop) } catch { throw "Invalid JSON or unreadable file '$Path': $($_.Exception.Message)" } }
+function Protect-UndiesText { param([AllowNull()][string]$Text) if($null -eq $Text){return $null}; $patterns=@('(?i)Bearer\s+[A-Za-z0-9._~+/=-]+','(?i)"(api[_-]?key|token|password|secret|authorization|cookie)"\s*:\s*"[^"]*"','(?i)\b(api[_-]?key|token|password|secret|authorization|cookie)\b\s*[:=]\s*[^\s;,''"}]+','(?is)-----BEGIN [^-]+PRIVATE KEY-----.*?-----END [^-]+PRIVATE KEY-----','(?i)(Server|Data Source)=.+;.*(Password|Pwd)=.+'); $result=$Text; foreach($p in $patterns){$result=[Regex]::Replace($result,$p,'[REDACTED]')}; return $result }
+function Test-UndiesContracts { param([string]$Root=(Get-Location).Path,[string[]]$ModuleFiles=@()) $errors=New-Object System.Collections.ArrayList; $required=@('README.md','VERSION','CHANGELOG.md','config/defaults.json','templates/project/project.template.json','templates/modules/module.template.json'); foreach($r in $required){if(-not(Test-Path -LiteralPath (Join-Path $Root $r))){[void]$errors.Add("Missing required file: $r")}}; foreach($j in @('config/defaults.json','templates/project/project.template.json','templates/modules/module.template.json')){try{$null=Read-UndiesJson (Join-Path $Root $j)}catch{[void]$errors.Add($_.Exception.Message)}}; Get-ChildItem -LiteralPath (Join-Path $Root 'schemas') -Filter '*.json' -ErrorAction SilentlyContinue|ForEach-Object{try{$null=Read-UndiesJson $_.FullName}catch{[void]$errors.Add($_.Exception.Message)}}; $seen=@{}; $modules=@(); foreach($mf in $ModuleFiles){try{$m=Read-UndiesJson $mf; $id=if($m.module_id){$m.module_id}else{$m.id}; if([string]::IsNullOrWhiteSpace($id)){[void]$errors.Add("Module ID is blank: $mf")} elseif($seen.ContainsKey($id)){[void]$errors.Add("Duplicate module ID: $id")} else {$seen[$id]=$true}; $modules += [pscustomobject]@{file=$mf;id=$id;data=$m}; $status=if($m.current_status){$m.current_status}else{$m.status}; if($status -and -not(Test-UndiesKnownStatus $status)){[void]$errors.Add("Invalid status '$status' in $mf")}; foreach($field in @('module_name','objective','inputs','dependencies','authorized_actions','prohibited_actions','files_in_scope','commands','tests','acceptance_criteria','evidence_requirements','expected_outputs','current_status','blocking_effect','resume_point')){if(-not($m.PSObject.Properties.Name -contains $field)){[void]$errors.Add("Missing module field '$field' in $mf")}}}catch{[void]$errors.Add($_.Exception.Message)}}; foreach($entry in $modules){foreach($dep in @($entry.data.dependencies)){if($dep.module_id -and -not $seen.ContainsKey($dep.module_id)){[void]$errors.Add("Invalid dependency reference '$($dep.module_id)' in $($entry.file)")}}}; return [pscustomobject]@{Passed=($errors.Count -eq 0);Errors=@($errors);CheckedAtUtc=Get-UndiesUtcTime} }
+function Initialize-UndiesProject { param([string]$Root=(Get-Location).Path) Assert-UndiesWorkspaceSafe -Root $Root|Out-Null; New-UndiesDirectoryStructure -Root $Root; $manifestPath=Join-Path $Root '.undies/config/project.json'; if(-not(Test-Path -LiteralPath $manifestPath)){ $now=Get-UndiesUtcTime; $manifest=[ordered]@{project_name='UNDIES';project_code='UND';version='0.1.0-alpha.2';build='Repository foundation prototype';workspace_root=(Resolve-Path -LiteralPath $Root).Path;repository_state='LOCAL ONLY';remote_state='https://github.com/ENDLESSOG81/UNDIES.git';default_branch='main';parent_authority='Human operator';created_date=$now;updated_date=$now;current_session=$null;current_module=$null;configuration_version='0.1.0'}; Save-UndiesJsonAtomic -Path $manifestPath -Data $manifest }; return Read-UndiesJson $manifestPath }
+function Invoke-UndiesDoctor { param([string]$Root=(Get-Location).Path) $checks=New-Object System.Collections.ArrayList; function AddCheck($Name,$Passed,$Detail){[void]$checks.Add([pscustomobject]@{name=$Name;passed=[bool]$Passed;detail=$Detail})}; try{Assert-UndiesWorkspaceSafe -Root $Root|Out-Null; AddCheck 'workspace_write_access' $true 'Writable and safe'}catch{AddCheck 'workspace_write_access' $false $_.Exception.Message}; AddCheck 'powershell_version' ($PSVersionTable.PSVersion.Major -ge 5) ($PSVersionTable.PSVersion.ToString()); $contract=Test-UndiesContracts -Root $Root; AddCheck 'contracts' $contract.Passed (($contract.Errors -join '; ')); AddCheck 'blue_gate' $true 'BLUE canonical; WAITING_FOR_EXTERNAL_DEPENDENCY deprecated legacy alias'; $git=Get-Command git -ErrorAction SilentlyContinue; if($git){$gitDetail=$git.Source}else{$gitDetail='Git not found; optional for portable foundation'}; AddCheck 'git_available_optional' ($null -ne $git) $gitDetail; $repoExists=Test-Path -LiteralPath (Join-Path $Root '.git'); if($repoExists){$repoDetail='LOCAL ONLY'}else{$repoDetail='NOT CREATED'}; AddCheck 'repository_state' $repoExists $repoDetail; $oneDrive=((Resolve-Path -LiteralPath $Root).Path -match '(?i)\\OneDrive( - [^\\]+)?\\'); if($oneDrive){$oneDriveDetail='OneDrive path detected'}else{$oneDriveDetail='No OneDrive path detected'}; AddCheck 'onedrive_warning' (-not $oneDrive) $oneDriveDetail; AddCheck 'session_health' (Test-Path -LiteralPath (Join-Path $Root '.undies/sessions')) 'Session directory check'; AddCheck 'evidence_health' (Test-Path -LiteralPath (Join-Path $Root '.undies/evidence')) 'Evidence directory check'; $failed=@($checks|Where-Object{-not $_.passed -and $_.name -notin @('git_available_optional','repository_state')}); return [pscustomobject]@{status=if($failed.Count -eq 0){'GREEN'}else{'RED'};checks=@($checks);generated_utc=Get-UndiesUtcTime} }

@@ -1,11 +1,11 @@
 ﻿========================================================
-MANUAL ACTION REQUIRED
+BLUE GATE - MANUAL ACTION REQUIRED
 ========================================================
 MODULE:
 {{MODULE}}
 REASON:
 {{REASON}}
-REQUIRED ITEM:
+STATUS:`nBLUE`nREQUIRED ITEM:
 {{REQUIRED_ITEM}}
 EXPECTED FORMAT:
 {{EXPECTED_FORMAT}}
@@ -20,3 +20,4 @@ RESUME POINT:
 SECURITY NOTICE:
 {{SECURITY_NOTICE}}
 ========================================================
+

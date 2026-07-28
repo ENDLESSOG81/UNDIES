@@ -7,3 +7,11 @@
 - Added JSON configuration and contract templates.
 - Added session, module queue, gate, dependency, evidence, reporting, and recovery engines.
 - Added local `UNDIES.ps1` bootstrap and native PowerShell test runner.
+## 0.1.0-alpha.2
+
+- Restored BLUE as the canonical safe-pause gate for exact external input, authorization, decisions, resources, credentials, configuration, or operator action.
+- Preserved `WAITING_FOR_EXTERNAL_DEPENDENCY` as a deprecated legacy alias that normalizes to BLUE when loaded.
+- Added BLUE reporting totals and source/canonical status display for historical records.
+- Added BLUE resume behavior requiring dependency validation before continuation.
+- Added BLUE gate, dependency, reporting, queue, and portable artifact tests.
+- Regenerated `dist/UNDIES.ps1`.

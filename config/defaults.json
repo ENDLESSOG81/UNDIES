@@ -1,12 +1,27 @@
 ﻿{
-  "configuration_version": "0.1.0",
-  "project_name": "UNDIES",
-  "project_code": "UND",
-  "version": "0.1.0-alpha.1",
-  "build": "repository foundation prototype",
-  "repository_state": "LOCAL ONLY",
-  "remote_state": "https://github.com/ENDLESSOG81/UNDIES.git",
-  "default_branch": "main",
-  "timezone": "America/Chicago",
-  "status_values": ["NOT_STARTED", "PREFLIGHT", "IN_PROGRESS", "VALIDATING", "GREEN", "YELLOW", "RED", "BLOCKED", "WAITING_FOR_EXTERNAL_DEPENDENCY", "STOPPED", "COMPLETE"]
+    "configuration_version":  "0.1.0",
+    "project_name":  "UNDIES",
+    "project_code":  "UND",
+    "version":  "0.1.0-alpha.2",
+    "build":  "repository foundation prototype",
+    "repository_state":  "LOCAL ONLY",
+    "remote_state":  "https://github.com/ENDLESSOG81/UNDIES.git",
+    "default_branch":  "main",
+    "timezone":  "America/Chicago",
+    "status_values":  [
+                          "NOT_STARTED",
+                          "PREFLIGHT",
+                          "IN_PROGRESS",
+                          "VALIDATING",
+                          "GREEN",
+                          "YELLOW",
+                          "BLUE",
+                          "RED",
+                          "BLOCKED",
+                          "STOPPED",
+                          "COMPLETE"
+                      ],
+    "legacy_status_aliases":  {
+                                  "WAITING_FOR_EXTERNAL_DEPENDENCY":  "BLUE"
+                              }
 }

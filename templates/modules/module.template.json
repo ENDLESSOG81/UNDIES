@@ -15,5 +15,8 @@
   "expected_outputs": [],
   "current_status": "NOT_STARTED",
   "blocking_effect": false,
+  "canonical_status": "NOT_STARTED",
+  "source_status": "NOT_STARTED",
   "resume_point": null
 }
+

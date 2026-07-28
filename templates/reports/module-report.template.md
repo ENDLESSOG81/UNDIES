@@ -20,3 +20,8 @@ Continuation decision: {{CONTINUATION_DECISION}}
 Resume point: {{RESUME_POINT}}
 Commit hash: {{COMMIT_HASH}}
 Push result: {{PUSH_RESULT}}
+
+Source status: {{SOURCE_STATUS}}
+Canonical status: {{CANONICAL_STATUS}}
+BLUE dependency: {{BLUE_DEPENDENCY}}
+
