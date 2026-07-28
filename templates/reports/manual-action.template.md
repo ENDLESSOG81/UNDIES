@@ -1,0 +1,22 @@
+﻿========================================================
+MANUAL ACTION REQUIRED
+========================================================
+MODULE:
+{{MODULE}}
+REASON:
+{{REASON}}
+REQUIRED ITEM:
+{{REQUIRED_ITEM}}
+EXPECTED FORMAT:
+{{EXPECTED_FORMAT}}
+POWERSHELL ACTION:
+{{POWERSHELL_ACTION}}
+VALIDATION COMMAND:
+{{VALIDATION_COMMAND}}
+SUCCESS CONDITION:
+{{SUCCESS_CONDITION}}
+RESUME POINT:
+{{RESUME_POINT}}
+SECURITY NOTICE:
+{{SECURITY_NOTICE}}
+========================================================
