@@ -1,0 +1,13 @@
+﻿function Get-UndiesModuleId { param($Module) if ($Module.module_id) { return $Module.module_id } return $Module.id }
+function Read-UndiesModule { param([string]$Path) $m = Read-UndiesJson $Path; $check = Test-UndiesContracts -Root (Get-Location).Path -ModuleFiles @($Path); if (-not $check.Passed) { throw ($check.Errors -join '; ') }; return $m }
+function Test-UndiesModuleDependencies { param([array]$Modules) $ids=@($Modules | ForEach-Object { Get-UndiesModuleId $_ }); foreach($m in $Modules){ foreach($d in @($m.dependencies)){ if($d.module_id -and ($ids -notcontains $d.module_id)){ throw "Missing dependency $($d.module_id) for $(Get-UndiesModuleId $m)" } } }; return $true }
+function New-UndiesModuleQueue {
+    param([array]$Modules)
+    Test-UndiesModuleDependencies -Modules $Modules | Out-Null
+    $seen=@{}; $items=@()
+    foreach($m in $Modules){ $id=Get-UndiesModuleId $m; if([string]::IsNullOrWhiteSpace($id)){throw 'Blank module ID'}; if($seen.ContainsKey($id)){throw "Duplicate module ID: $id"}; $seen[$id]=$true; $items += [pscustomobject]@{ module_id=$id; status='NOT_STARTED'; data=$m } }
+    return [pscustomobject]@{ pending=@($items); active=$null; completed=@(); stopped=@(); failed_module=$null; lifecycle=@('NOT_STARTED','PREFLIGHT','IN_PROGRESS','VALIDATING','GREEN','YELLOW','RED','BLOCKED','WAITING_FOR_EXTERNAL_DEPENDENCY') }
+}
+function Start-UndiesNextModule { param($Queue) if($Queue.stopped.Count -gt 0){throw 'Queue is stopped'}; if($Queue.active){throw "Module already active: $($Queue.active.module_id)"}; if($Queue.pending.Count -eq 0){return $Queue}; $next=$Queue.pending[0]; $next.status='IN_PROGRESS'; $Queue.active=$next; $Queue.pending=@($Queue.pending | Select-Object -Skip 1); return $Queue }
+function Complete-UndiesActiveModule { param($Queue,[string]$Status,[bool]$BlocksNextModule=$false) if(-not $Queue.active){throw 'No active module'}; if(@($Queue.completed|ForEach-Object module_id) -contains $Queue.active.module_id){throw "Duplicate completion: $($Queue.active.module_id)"}; if(@('GREEN','YELLOW','RED','BLOCKED','WAITING_FOR_EXTERNAL_DEPENDENCY') -notcontains $Status){ throw "Unsupported completion status: $Status" }; $Queue.active.status=$Status; if($Status -in @('RED','BLOCKED','WAITING_FOR_EXTERNAL_DEPENDENCY') -or ($Status -eq 'YELLOW' -and $BlocksNextModule)){ $Queue.failed_module=$Queue.active.module_id; $Queue.stopped += $Queue.active } else { $Queue.completed += $Queue.active }; $Queue.active=$null; return $Queue }
+function Resume-UndiesModuleQueue { param($Queue) if($Queue.stopped.Count -gt 0){ $stopped=$Queue.stopped[-1]; $Queue.pending=@($stopped)+@($Queue.pending); $Queue.stopped=@(); $Queue.failed_module=$null }; return $Queue }
