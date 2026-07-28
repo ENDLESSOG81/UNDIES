@@ -1,6 +1,6 @@
 ﻿param(
     [Parameter(Position=0)]
-    [ValidateSet('initialize','doctor','status','session-start','session-close','blue-report','resume','adopt','configure','help')]
+    [ValidateSet('initialize','doctor','status','session-start','session-close','blue-report','resume','adopt','configure','version','upgrade','help')]
     [string]$Command = 'help',
     [string]$SessionId,
     [switch]$DependencyValidated,
@@ -12,7 +12,9 @@
     [switch]$Show,
     [switch]$Validate,
     [string]$ProjectPurpose,
-    [string]$ProjectVersion
+    [string]$ProjectVersion,
+    [switch]$Check,
+    [switch]$Apply
 )
 function Get-UndiesUtcTime { [DateTime]::UtcNow.ToString('o') }
 function Get-UndiesCentralTime { try { $tz=[TimeZoneInfo]::FindSystemTimeZoneById('Central Standard Time'); [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow,$tz).ToString('o') } catch { Get-UndiesUtcTime } }
@@ -27,6 +29,12 @@ function Get-PortableGitInfo($Root){ if(-not(Test-Path (Join-Path $Root '.git'))
 function Invoke-PortableAdoption($Root){ $inventory=@(Get-PortableInventory $Root); $conflicts=@(); if(Test-Path (Join-Path $Root '.undies/config/project.json')){$conflicts += 'Existing UNDIES manifest'}; $proposal=[ordered]@{ mode=if($DryRun){'DRY_RUN'}elseif($Preview){'PREVIEW'}elseif($Confirm){'APPLY'}else{'PREVIEW'}; project_name=if($ProjectName){$ProjectName}else{Split-Path -Leaf $Root}; project_code=if($ProjectCode){$ProjectCode}else{'UND'}; existing_file_count=$inventory.Count; conflicts=$conflicts; files_to_create=@('.undies/config/project.json','.undies/adoption/baseline.json','.undies/recovery/rollback-manifest.json'); untouched_files=@($inventory.path); git=(Get-PortableGitInfo $Root); recommended_gitignore=@('.undies/','*.log','.env','.env.*'); proposed_git_actions=@('No automatic git add, commit, push, pull, merge, reset, checkout, restore, clean, stash, or branch changes') }
     if($DryRun -or $Preview -or -not $Confirm){ return $proposal }
     Initialize-Portable $Root|Out-Null; New-Item -ItemType Directory -Force -Path (Join-Path $Root '.undies/adoption')|Out-Null; Save-Json (Join-Path $Root '.undies/adoption/baseline.json') ([ordered]@{created_utc=Get-UndiesUtcTime; inventory=$inventory; git=$proposal.git}); Save-Json (Join-Path $Root '.undies/recovery/rollback-manifest.json') ([ordered]@{created_utc=Get-UndiesUtcTime; operation='adoption'; managed_files=$proposal.files_to_create; host_files_preserved=@($inventory.path)}); return $proposal }
+function Compare-VersionText([string]$A,[string]$B){ $pa=($A -replace '-.*$','').Split('.')|ForEach-Object{[int]$_}; $pb=($B -replace '-.*$','').Split('.')|ForEach-Object{[int]$_}; for($i=0;$i -lt 3;$i++){ if($pa[$i] -lt $pb[$i]){return -1}; if($pa[$i] -gt $pb[$i]){return 1} }; return 0 }
+function Invoke-PortableVersion($Root){ $manifest=Join-Path $Root '.undies/config/project.json'; $installed=if(Test-Path $manifest){(Read-Json $manifest).version}else{'NONE'}; [pscustomobject]@{portable_version='0.1.0-alpha.2';installed_version=$installed;schema_version='0.1.0'} }
+function Invoke-PortableUpgrade($Root){ Initialize-Portable $Root|Out-Null; $manifest=Join-Path $Root '.undies/config/project.json'; $m=Read-Json $manifest; $cmp=Compare-VersionText $m.version '0.1.0-alpha.2'; if($cmp -gt 0){ return [pscustomobject]@{status='BLUE';reason='Installed UNDIES version is newer than portable bootstrap';installed_version=$m.version;portable_version='0.1.0-alpha.2';manual_action='Use a matching or newer UNDIES bootstrap';validation_command='.\UNDIES.ps1 version';resume_checkpoint='upgrade-version-compatible'} }
+    $plan=[ordered]@{status='GREEN';operation=if($m.version -ne '0.1.0-alpha.2'){'UPGRADE'}else{'SAME_VERSION'};installed_version=$m.version;portable_version='0.1.0-alpha.2';legacy_status_aliases=@{WAITING_FOR_EXTERNAL_DEPENDENCY='BLUE'};will_backup=@('.undies/config','.undies/sessions','.undies/evidence','.undies/reports','.undies/recovery')}
+    if($Check -or $Preview -or -not $Apply){ return $plan }
+    $backup=Join-Path $Root ('.undies/upgrade/backups/' + (Get-Date -Format yyyyMMddHHmmss)); New-Item -ItemType Directory -Force -Path $backup|Out-Null; Copy-Item -LiteralPath (Join-Path $Root '.undies/config') -Destination $backup -Recurse -Force; $m.version='0.1.0-alpha.2'; $m.updated_date=Get-UndiesUtcTime; Save-Json $manifest $m; $report=[ordered]@{status='GREEN';operation=$plan.operation;backup=$backup;validated=$true}; Save-Json (Join-Path $Root '.undies/reports/upgrade-report.json') $report; return $report }
 function Test-ProjectCode([string]$Code){ return ($Code -match '^[A-Z][A-Z0-9]{1,9}$') }
 function Invoke-PortableConfigure($Root){
     $manifest=Join-Path $Root '.undies/config/project.json'
@@ -56,4 +64,10 @@ switch($Command){
  'resume' { if(-not $DependencyValidated){ throw 'BLUE dependency validation has not succeeded.' } else { @{status='RESUMED';canonical_status='BLUE';resume_checkpoint='portable-blue-checkpoint'} | ConvertTo-Json -Depth 5 } }
  'adopt' { Invoke-PortableAdoption $Root | ConvertTo-Json -Depth 20 }
  'configure' { Invoke-PortableConfigure $Root | ConvertTo-Json -Depth 20 }
+ 'version' { Invoke-PortableVersion $Root | ConvertTo-Json -Depth 10 }
+ 'upgrade' { Invoke-PortableUpgrade $Root | ConvertTo-Json -Depth 20 }
 }
+
+
+
+
