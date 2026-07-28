@@ -1,6 +1,6 @@
 ﻿param(
     [Parameter(Position=0)]
-    [ValidateSet('initialize','doctor','status','session-start','session-close','blue-report','resume','adopt','help')]
+    [ValidateSet('initialize','doctor','status','session-start','session-close','blue-report','resume','adopt','configure','help')]
     [string]$Command = 'help',
     [string]$SessionId,
     [switch]$DependencyValidated,
@@ -8,7 +8,11 @@
     [Alias('dry-run')][switch]$DryRun,
     [switch]$Confirm,
     [Alias('project-name')][string]$ProjectName,
-    [Alias('project-code')][string]$ProjectCode
+    [Alias('project-code')][string]$ProjectCode,
+    [switch]$Show,
+    [switch]$Validate,
+    [string]$ProjectPurpose,
+    [string]$ProjectVersion
 )
 function Get-UndiesUtcTime { [DateTime]::UtcNow.ToString('o') }
 function Get-UndiesCentralTime { try { $tz=[TimeZoneInfo]::FindSystemTimeZoneById('Central Standard Time'); [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow,$tz).ToString('o') } catch { Get-UndiesUtcTime } }
@@ -23,6 +27,20 @@ function Get-PortableGitInfo($Root){ if(-not(Test-Path (Join-Path $Root '.git'))
 function Invoke-PortableAdoption($Root){ $inventory=@(Get-PortableInventory $Root); $conflicts=@(); if(Test-Path (Join-Path $Root '.undies/config/project.json')){$conflicts += 'Existing UNDIES manifest'}; $proposal=[ordered]@{ mode=if($DryRun){'DRY_RUN'}elseif($Preview){'PREVIEW'}elseif($Confirm){'APPLY'}else{'PREVIEW'}; project_name=if($ProjectName){$ProjectName}else{Split-Path -Leaf $Root}; project_code=if($ProjectCode){$ProjectCode}else{'UND'}; existing_file_count=$inventory.Count; conflicts=$conflicts; files_to_create=@('.undies/config/project.json','.undies/adoption/baseline.json','.undies/recovery/rollback-manifest.json'); untouched_files=@($inventory.path); git=(Get-PortableGitInfo $Root); recommended_gitignore=@('.undies/','*.log','.env','.env.*'); proposed_git_actions=@('No automatic git add, commit, push, pull, merge, reset, checkout, restore, clean, stash, or branch changes') }
     if($DryRun -or $Preview -or -not $Confirm){ return $proposal }
     Initialize-Portable $Root|Out-Null; New-Item -ItemType Directory -Force -Path (Join-Path $Root '.undies/adoption')|Out-Null; Save-Json (Join-Path $Root '.undies/adoption/baseline.json') ([ordered]@{created_utc=Get-UndiesUtcTime; inventory=$inventory; git=$proposal.git}); Save-Json (Join-Path $Root '.undies/recovery/rollback-manifest.json') ([ordered]@{created_utc=Get-UndiesUtcTime; operation='adoption'; managed_files=$proposal.files_to_create; host_files_preserved=@($inventory.path)}); return $proposal }
+function Test-ProjectCode([string]$Code){ return ($Code -match '^[A-Z][A-Z0-9]{1,9}$') }
+function Invoke-PortableConfigure($Root){
+    $manifest=Join-Path $Root '.undies/config/project.json'
+    if($Show){ if(Test-Path $manifest){ return Read-Json $manifest } else { throw 'No UNDIES manifest exists. Run initialize or configure -confirm.' } }
+    if($Validate){ $m=Read-Json $manifest; if(-not(Test-ProjectCode $m.project_code)){throw 'Invalid project code'}; return [pscustomobject]@{status='GREEN';validated=$true;project_code=$m.project_code} }
+    if(-not $Confirm){ return [pscustomobject]@{status='PREVIEW';required=@('project-name','project-code');message='Use -confirm to save configuration.'} }
+    if([string]::IsNullOrWhiteSpace($ProjectName)){ throw 'Project name is required.' }
+    if([string]::IsNullOrWhiteSpace($ProjectCode) -or -not(Test-ProjectCode $ProjectCode)){ throw 'Invalid project code. Use 2-10 uppercase letters or digits, starting with a letter.' }
+    Initialize-Portable $Root|Out-Null
+    $now=Get-UndiesUtcTime
+    $data=[ordered]@{project_name=$ProjectName;project_code=$ProjectCode;project_purpose=$ProjectPurpose;version=if($ProjectVersion){$ProjectVersion}else{'0.1.0'};build='configured portable project';workspace_root=(Resolve-Path $Root).Path;repository_state=if(Test-Path (Join-Path $Root '.git')){'LOCAL'}else{'NONE'};remote_state='NONE';default_branch='NONE';parent_authority='Human operator';created_date=$now;updated_date=$now;current_session=$null;current_module=$null;configuration_version='0.1.0';preferred_time_zone='America/Chicago';module_numbering_format='UND-###';session_numbering_format='UND-<PROJECT_CODE>-<YYYYMMDD>-<SEQUENCE>';git_commit_authorization_policy='manual';push_authorization_policy='manual';external_connection_policy='deny-by-default';evidence_retention_policy='preserve';report_location='.undies/reports';onedrive_policy='stop';mode='existing-or-new-project'}
+    Save-Json $manifest $data
+    return Read-Json $manifest
+}
 function New-PortableSession($Root){ Initialize-Portable $Root|Out-Null; $dir=Join-Path $Root '.undies/sessions'; $id='UND-UND-'+(Get-Date -Format yyyyMMdd)+'-'+('{0:000}' -f ((@(Get-ChildItem $dir -Filter '*.json' -ErrorAction SilentlyContinue).Count)+1)); $s=[ordered]@{session_id=$id;project_name=(Split-Path -Leaf $Root);project_code='UND';project_version='0.1.0-alpha.2';workspace=(Resolve-Path $Root).Path;start_time_local=Get-UndiesCentralTime;start_time_utc=Get-UndiesUtcTime;end_time_local=$null;end_time_utc=$null;current_module=$null;completed_modules=@();pending_modules=@();failed_module=$null;warnings=@();resume_point='session-started';final_status='IN_PROGRESS';status='IN_PROGRESS'}; Save-Json (Join-Path $dir "$id.json") $s; $s }
 function Close-PortableSession($Root,$SessionId){ $dir=Join-Path $Root '.undies/sessions'; if(-not $SessionId){$active=Get-ChildItem $dir -Filter '*.json'|ForEach-Object{Read-Json $_.FullName}|Where-Object status -eq 'IN_PROGRESS'|Select-Object -First 1; if($active){$SessionId=$active.session_id}else{throw 'No active session'}}; $p=Join-Path $dir "$SessionId.json"; $s=Read-Json $p; $s.end_time_local=Get-UndiesCentralTime; $s.end_time_utc=Get-UndiesUtcTime; $s.status='COMPLETE'; $s.final_status='COMPLETE'; Save-Json $p $s; Read-Json $p }
 function New-BlueReport($Root){ Initialize-Portable $Root|Out-Null; $text=@('========================================================','BLUE GATE - MANUAL ACTION REQUIRED','========================================================','MODULE:','UND-PORTABLE Portable bootstrap','STATUS:','BLUE','REASON:','Progress is paused for an exact operator input.','REQUIRED ITEM:','Operator input','DEPENDENCY TYPE:','OPERATOR_INPUT','EXPECTED FORMAT:','Non-secret confirmation value','SENSITIVE:','NO','SOURCE OR RESPONSIBLE PARTY:','Human operator','MANUAL ACTION:','Provide the required input.','POWERSHELL ACTION:','$value = Read-Host "Required input"','VALIDATION COMMAND:','Test-Path .','SUCCESS CONDITION:','Validation returns True','FAILURE CONDITION:','Remain BLUE','RESUME MODULE:','UND-PORTABLE','RESUME CHECKPOINT:','portable-blue-checkpoint','SECURITY NOTICE:','NONE','========================================================') -join [Environment]::NewLine; $path=Join-Path $Root '.undies/reports/portable-blue-report.md'; New-Item -ItemType Directory -Force -Path (Split-Path -Parent $path)|Out-Null; $text|Set-Content $path -Encoding UTF8; $text }
@@ -37,4 +55,5 @@ switch($Command){
  'blue-report' { New-BlueReport $Root }
  'resume' { if(-not $DependencyValidated){ throw 'BLUE dependency validation has not succeeded.' } else { @{status='RESUMED';canonical_status='BLUE';resume_checkpoint='portable-blue-checkpoint'} | ConvertTo-Json -Depth 5 } }
  'adopt' { Invoke-PortableAdoption $Root | ConvertTo-Json -Depth 20 }
+ 'configure' { Invoke-PortableConfigure $Root | ConvertTo-Json -Depth 20 }
 }
