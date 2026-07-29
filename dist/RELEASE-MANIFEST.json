@@ -2,16 +2,17 @@
     "product_name":  "UNDIES",
     "version":  "0.3.0-alpha.2",
     "release_type":  "GitHub prerelease",
-    "build_date_utc":  "2026-07-29T08:12:12.6845715Z",
-    "source_commit":  "7b83d98ac7ca6a5e93160141c2f99e1781a11846",
+    "build_date_utc":  "2026-07-29T08:32:27.9460936Z",
+    "source_commit":  "a4c0c25d3c0c01ece60a447f83d1cf7f2b9d12d3",
+    "tag":  "v0.3.0-alpha.2",
     "packaging_method":  "build/package-undies.ps1 from build/portable-template.ps1",
     "powershell_compatibility":  [
                                      "PowerShell 7 preferred",
                                      "Windows PowerShell 5.1 compatible where standard .NET APIs are available"
                                  ],
     "artifact_filename":  "UNDIES.ps1",
-    "artifact_size":  32943,
-    "sha256_checksum":  "111FBF958819C08CBE0C44F067FDD89BDB427BFD6F4DBAE4AD37BCD1CC9EE990",
+    "artifact_size":  32964,
+    "sha256_checksum":  "5DF1F5428C59151C047F0ABDC21210B335BB550FFA81F668740FFFFC3DD0304C",
     "supported_deployment_modes":  [
                                        "empty-folder initialize",
                                        "existing non-Git adoption",
@@ -30,8 +31,10 @@
                                     "0.3.0-alpha.2"
                                 ],
     "immutable_core":  true,
+    "runtime_isolation":  true,
     "ownership_manifest":  true,
     "project_isolation":  true,
+    "source_repository_isolation":  true,
     "reverse_synchronization":  "DISABLED",
     "required_dependencies":  [
                                   "PowerShell",
@@ -45,13 +48,13 @@
                               "GitHub release publication may require authenticated external tooling",
                               "project-specific test execution requires operator authorization"
                           ],
-    "test_totals":  "UND-022 module test",
-    "pilot_result":  "UND-019 GREEN disposable DRIA clone",
+    "test_totals":  "UND-024 passed=48 failed=0 skipped=0; regression passed=55 failed=0 skipped=0; UND-025 pending",
+    "pilot_result":  "DIRA fixture pending",
     "compatible_previous_releases":  [
                                          "0.2.0-alpha.2"
                                      ],
     "superseded_releases":  [
                                 "0.2.0-alpha.1"
                             ],
-    "release_status":  "alpha-prerelease"
+    "release_status":  "PRERELEASE"
 }
