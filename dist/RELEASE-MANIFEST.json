@@ -1,15 +1,15 @@
 ﻿{
     "product_name":  "UNDIES",
     "version":  "0.2.0-alpha.1",
-    "build_date_utc":  "2026-07-29T00:43:58.9132793Z",
-    "source_commit":  "e7c3662c47c37fece985f28e4fd9846b678cba5d",
+    "build_date_utc":  "2026-07-29T00:46:10.9242054Z",
+    "source_commit":  "caa1aa60204e1d51cc9ff9a1bf94ad48d0b41b24",
     "powershell_compatibility":  [
                                      "PowerShell 7 preferred",
                                      "Windows PowerShell 5.1 compatible where standard .NET APIs are available"
                                  ],
     "artifact_filename":  "UNDIES.ps1",
-    "artifact_size":  18647,
-    "sha256_checksum":  "6A486B84B6754CEE5CF23CE82EB439BB9B1A48AD036C56ED0F8AB80105AC1E31",
+    "artifact_size":  18665,
+    "sha256_checksum":  "47A5B36CE94B006BBFFB2971591C269715FD6461F22646BB0A85C1B933E6FF32",
     "supported_deployment_modes":  [
                                        "empty-folder initialize",
                                        "existing non-Git adoption",
