@@ -1,12 +1,18 @@
 ﻿# Changelog
 
-## Unreleased
+## 0.2.0-alpha.1
 
-- Validated UND-019 controlled real-project pilot against a disposable DRIA clone.
+- Added clean-folder portable deployment validation.
+- Added existing non-Git project adoption with preview and dry-run.
+- Added Git-aware adoption safeguards for repositories with history and uncommitted work.
+- Added guided project configuration commands.
+- Added upgrade and compatibility checks, including legacy BLUE alias handling.
+- Added doctor, repair, and integrity verification behavior.
+- Added rollback, disable, and safe removal behavior.
+- Validated a controlled real-project pilot against a disposable DRIA clone.
 - Corrected portable adoption so supplied project identity is persisted before session creation.
-- Added UND-019 pilot coverage for preview, dry-run, adoption, BLUE resume validation, rollback, removal, and Git isolation.
-- Regenerated `dist/UNDIES.ps1`.
-
+- Added release packaging with `dist/UNDIES.ps1`, SHA-256 checksum, release manifest, and alpha operation documentation.
+- Known alpha limitation: GitHub prerelease publication may require authenticated external tooling.
 ## 0.1.0-alpha.1
 
 - Established UNDIES constitutional foundation.
@@ -22,4 +28,5 @@
 - Added BLUE resume behavior requiring dependency validation before continuation.
 - Added BLUE gate, dependency, reporting, queue, and portable artifact tests.
 - Regenerated `dist/UNDIES.ps1`.
+
 

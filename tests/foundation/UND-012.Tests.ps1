@@ -7,7 +7,7 @@ try {
     Assert (@(Get-ChildItem -LiteralPath $HostDir -Force).Count -eq 0) 'host folder not empty'
     Copy-Item -LiteralPath (Join-Path $Root 'dist/UNDIES.ps1') -Destination $HostDir
     $init = & (Join-Path $HostDir 'UNDIES.ps1') initialize | ConvertFrom-Json
-    Assert ($init.version -eq '0.1.0-alpha.2') 'portable version mismatch'
+    Assert ($init.version -eq '0.2.0-alpha.1') 'portable version mismatch'
     $doctor = & (Join-Path $HostDir 'UNDIES.ps1') doctor | ConvertFrom-Json
     Assert ($doctor.status -eq 'GREEN') 'doctor not GREEN'
     $session = & (Join-Path $HostDir 'UNDIES.ps1') session-start | ConvertFrom-Json
@@ -22,4 +22,5 @@ try {
     Assert (-not(Test-Path -LiteralPath (Join-Path $HostDir '.git'))) 'git unexpectedly required/created'
     'UND-012_TEST passed=10 failed=0 skipped=0'
 } finally { if(Test-Path $HostDir){ Remove-Item -LiteralPath $HostDir -Recurse -Force } }
+
 

@@ -10,7 +10,7 @@ $engineFiles=@('src/bootstrap/Core.ps1','src/session/SessionEngine.ps1','src/mod
 foreach($f in $engineFiles){ . (Join-Path $Script:UndiesRoot $f) }
 function Show-UndiesHelp {
 @"
-UNDIES 0.1.0-alpha.2
+UNDIES 0.2.0-alpha.1
 
 Commands:
   .\UNDIES.ps1 initialize
@@ -45,4 +45,5 @@ try {
         'report' { $mods=@('UND-001','UND-002','UND-003','UND-004','UND-005','UND-006','UND-007','UND-008','UND-009','UND-010') | ForEach-Object { [pscustomobject]@{ module_id=$_; status='GREEN' } }; New-UndiesSessionReport -Root $Script:UndiesRoot -SessionId 'foundation-final' -ModuleResults $mods -FinalVerdict 'GREEN' }
     }
 } catch { Write-Error $_.Exception.Message; exit 1 }
+
 
