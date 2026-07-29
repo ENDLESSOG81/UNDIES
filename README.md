@@ -4,7 +4,7 @@ UNDIES is a standalone, portable project governance and execution system.
 
 UNDIES is the first governance package placed into a project workspace. It establishes local project authority, module sequencing, validation gates, evidence capture, reporting, and recovery before any remote repository or cloud service is required.
 
-The current alpha build is version `0.3.0-alpha.1`.
+The current alpha build is version `0.3.0-alpha.2`.
 
 ## Mission
 
@@ -29,6 +29,8 @@ HOST PROJECT UNDIES INSTALLATION
 Host projects do not write back to the UNDIES source repository. Installed core files live under `.undies/core/<VERSION>/`; the root `UNDIES.ps1` launcher dispatches only to the active local core recorded in `.undies/active-version.json`. Project configuration lives under `.undies/project/`, extensions under `.undies/extensions/`, and runtime state under runtime-owned directories.
 
 Unknown files are host-owned. Filename collisions fail closed with BLUE instead of being overwritten silently.
+
+Session and read-only commands validate existing metadata without rewriting tracked deployment files. Runtime records belong under `.undies/runtime/`, `.undies/sessions/`, `.undies/evidence/`, `.undies/reports/`, and `.undies/recovery/`.
 
 ## Quick Start
 

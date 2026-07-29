@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
     [string]$ReleaseStatus = 'PRERELEASE',
     [string]$PilotResult = 'UND-019 GREEN',
@@ -28,7 +28,7 @@ $manifest = [ordered]@{
     artifact_size = (Get-Item -LiteralPath $artifact).Length
     sha256_checksum = $hash.Hash
     supported_deployment_modes = @('empty-folder initialize','existing non-Git adoption','existing Git repository adoption','upgrade','repair','rollback','removal')
-    supported_upgrade_range = @('0.1.0-alpha.1','0.1.0-alpha.2','0.2.0-alpha.1','0.2.0-alpha.2','0.3.0-alpha.1')
+    supported_upgrade_range = @('0.1.0-alpha.1','0.1.0-alpha.2','0.2.0-alpha.1','0.2.0-alpha.2','0.3.0-alpha.1','0.3.0-alpha.2')
     immutable_core = $true
     ownership_manifest = $true
     project_isolation = $true

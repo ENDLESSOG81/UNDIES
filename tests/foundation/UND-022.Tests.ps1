@@ -17,7 +17,7 @@ try {
     Install-Artifact $HostDir
     $init = & (Join-Path $HostDir 'UNDIES.ps1') initialize | ConvertFrom-Json
     Assert ($init.status -eq 'GREEN') '01 install failed'
-    $coreDir = Join-Path $HostDir '.undies/core/0.3.0-alpha.1'
+    $coreDir = Join-Path $HostDir '.undies/core/0.3.0-alpha.2'
     Assert (Test-Path (Join-Path $coreDir 'UNDIES.core.ps1')) '02 versioned core missing'
     Assert ((Get-Content (Join-Path $HostDir 'UNDIES.ps1') -Raw) -match 'active-version.json') '03 launcher does not use active local core'
     $coreManifest = Get-Content (Join-Path $coreDir 'CORE-MANIFEST.json') -Raw | ConvertFrom-Json
@@ -28,8 +28,8 @@ try {
 
     $Collision = New-TempDir 'undies-022-collision'; $Roots += $Collision
     Install-Artifact $Collision
-    New-Item -ItemType Directory -Force -Path (Join-Path $Collision '.undies/core/0.3.0-alpha.1') | Out-Null
-    'unknown' | Set-Content -LiteralPath (Join-Path $Collision '.undies/core/0.3.0-alpha.1/UNDIES.core.ps1') -NoNewline
+    New-Item -ItemType Directory -Force -Path (Join-Path $Collision '.undies/core/0.3.0-alpha.2') | Out-Null
+    'unknown' | Set-Content -LiteralPath (Join-Path $Collision '.undies/core/0.3.0-alpha.2/UNDIES.core.ps1') -NoNewline
     $collisionResult = & (Join-Path $Collision 'UNDIES.ps1') initialize | ConvertFrom-Json
     Assert ($collisionResult.status -eq 'BLUE') '07 unknown collision did not BLUE'
 
@@ -109,11 +109,11 @@ try {
     Copy-Item -LiteralPath (Join-Path $RepoRoot 'dist/UNDIES.ps1') -Destination $UpgradeHost -Force
     Copy-Item -LiteralPath (Join-Path $RepoRoot 'dist/UNDIES.ps1.sha256') -Destination $UpgradeHost -Force
     $upgrade = & (Join-Path $UpgradeHost 'UNDIES.ps1') upgrade -apply | ConvertFrom-Json
-    Assert ($upgrade.status -eq 'GREEN' -and (Test-Path (Join-Path $UpgradeHost '.undies/core/0.3.0-alpha.1'))) '24 second core not installed'
+    Assert ($upgrade.status -eq 'GREEN' -and (Test-Path (Join-Path $UpgradeHost '.undies/core/0.3.0-alpha.2'))) '24 second core not installed'
     Assert (Test-Path (Join-Path $UpgradeHost '.undies/core/0.2.0-alpha.2/UNDIES.core.ps1')) '25 previous core overwritten'
-    Assert ((Get-Content $activePath -Raw | ConvertFrom-Json).active_core_version -eq '0.3.0-alpha.1') '26 active switch failed'
-    Set-ItemProperty -LiteralPath (Join-Path $UpgradeHost '.undies/core/0.3.0-alpha.1/UNDIES.core.ps1') -Name IsReadOnly -Value $false -ErrorAction SilentlyContinue
-    'collision' | Set-Content -LiteralPath (Join-Path $UpgradeHost '.undies/core/0.3.0-alpha.1/UNDIES.core.ps1') -NoNewline
+    Assert ((Get-Content $activePath -Raw | ConvertFrom-Json).active_core_version -eq '0.3.0-alpha.2') '26 active switch failed'
+    Set-ItemProperty -LiteralPath (Join-Path $UpgradeHost '.undies/core/0.3.0-alpha.2/UNDIES.core.ps1') -Name IsReadOnly -Value $false -ErrorAction SilentlyContinue
+    'collision' | Set-Content -LiteralPath (Join-Path $UpgradeHost '.undies/core/0.3.0-alpha.2/UNDIES.core.ps1') -NoNewline
     @{active_core_version='0.2.0-alpha.2';active_core_path='.undies/core/0.2.0-alpha.2'} | ConvertTo-Json | Set-Content $activePath -Encoding UTF8
     Copy-Item -LiteralPath (Join-Path $RepoRoot 'dist/UNDIES.ps1') -Destination $UpgradeHost -Force
     Copy-Item -LiteralPath (Join-Path $RepoRoot 'dist/UNDIES.ps1.sha256') -Destination $UpgradeHost -Force

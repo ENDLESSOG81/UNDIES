@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Position=0)]
     [ValidateSet('initialize','doctor','status','session-start','session-close','blue-report','resume','adopt','configure','version','upgrade','integrity','repair','rollback','disable','remove','import','ownership','core-status','help')]
     [string]$Command = 'help',
@@ -17,7 +17,7 @@ param(
     [switch]$Apply,
     [switch]$Detailed
 )
-$script:UndiesVersion = '0.3.0-alpha.1'
+$script:UndiesVersion = '0.3.0-alpha.2'
 $script:ConfigurationVersion = '0.2.0'
 $script:SourceRepositoryPath = 'D:\GITHUB\undies'
 $script:SourceRepositoryUrl = 'https://github.com/ENDLESSOG81/UNDIES.git'
@@ -26,7 +26,7 @@ function Get-UndiesUtcTime { [DateTime]::UtcNow.ToString('o') }
 function Get-UndiesCentralTime { try { $tz=[TimeZoneInfo]::FindSystemTimeZoneById('Central Standard Time'); [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow,$tz).ToString('o') } catch { Get-UndiesUtcTime } }
 function ConvertTo-UndiesCanonicalStatus([string]$Status){ if($Status -eq 'WAITING_FOR_EXTERNAL_DEPENDENCY'){'BLUE'}else{$Status} }
 function Protect-UndiesText([string]$Text){ if($null -eq $Text){return $null}; [Regex]::Replace($Text,'(?i)(Bearer\s+\S+|token\s*[:=]\s*\S+|password\s*[:=]\s*\S+|secret\s*[:=]\s*\S+)','[REDACTED]') }
-function Save-Json($Path,$Data){ $dir=Split-Path -Parent $Path; if(-not(Test-Path $dir)){New-Item -ItemType Directory -Force -Path $dir|Out-Null}; $tmp=Join-Path $dir ('.tmp-'+[guid]::NewGuid().ToString('N')+'.json'); $Data|ConvertTo-Json -Depth 50|Set-Content $tmp -Encoding UTF8; Move-Item $tmp $Path -Force }
+function Save-Json($Path,$Data){ $dir=Split-Path -Parent $Path; if(-not(Test-Path $dir)){New-Item -ItemType Directory -Force -Path $dir|Out-Null}; $json=$Data|ConvertTo-Json -Depth 50; if(Test-Path -LiteralPath $Path){ $existing=Get-Content -LiteralPath $Path -Raw; if($existing.TrimEnd() -eq $json.TrimEnd()){ return } }; $tmp=Join-Path $dir ('.tmp-'+[guid]::NewGuid().ToString('N')+'.json'); $json|Set-Content $tmp -Encoding UTF8; Move-Item $tmp $Path -Force }
 function Read-Json($Path){ Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json }
 function Get-Root { Split-Path -Parent $MyInvocation.ScriptName }
 function Resolve-InsideRoot([string]$Root,[string]$RelativePath){
@@ -211,6 +211,14 @@ function Install-ImmutableCore($Root,[string]$Mode='initialize'){
     Save-OwnershipManifest $Root $version|Out-Null
     [pscustomobject]@{status='GREEN';mode=$Mode;version=$version;active_core_version=$version;active_core_path=".undies/core/$version";reverse_synchronization='DISABLED';source_repository_dependency='NONE'}
 }
+function Assert-PortableInstalled($Root,[string]$Operation){
+    Assert-SafeRoot $Root|Out-Null
+    Test-LauncherChecksum $Root
+    $health=Test-ImmutableCore $Root
+    if($health.status -ne 'GREEN'){ throw "UNDIES installation is not healthy for $Operation. Run doctor, integrity, repair -preview, then repair -apply if authorized." }
+    foreach($d in @('.undies/runtime','.undies/sessions','.undies/evidence','.undies/reports','.undies/recovery')){ New-Item -ItemType Directory -Force -Path (Resolve-InsideRoot $Root $d)|Out-Null }
+    $health
+}
 function Test-ImmutableCore($Root){
     $issues=@()
     try { Assert-SafeRoot $Root|Out-Null } catch { $issues += $_.Exception.Message }
@@ -253,7 +261,11 @@ function Invoke-PortableConfigure($Root){
     if(-not $Confirm){ return [pscustomobject]@{status='PREVIEW';required=@('project-name','project-code');message='Use -confirm to save configuration.'} }
     if([string]::IsNullOrWhiteSpace($ProjectName)){ throw 'Project name is required.' }
     if([string]::IsNullOrWhiteSpace($ProjectCode) -or $ProjectCode -notmatch '^[A-Z][A-Z0-9]{1,9}$'){ throw 'Invalid project code. Use 2-10 uppercase letters or digits, starting with a letter.' }
-    $m=Read-Json $manifest; $m.project_name=$ProjectName; $m.project_code=$ProjectCode; $m.project_purpose=$ProjectPurpose; if($ProjectVersion){$m.project_version=$ProjectVersion}; $m.updated_date=Get-UndiesUtcTime; Save-Json $manifest $m; Read-Json $manifest
+    $m=Read-Json $manifest
+    foreach($name in @('project_name','project_code','project_purpose','project_version','updated_date')){
+        if(-not ($m.PSObject.Properties.Name -contains $name)){ $m | Add-Member -NotePropertyName $name -NotePropertyValue $null }
+    }
+    $m.project_name=$ProjectName; $m.project_code=$ProjectCode; $m.project_purpose=$ProjectPurpose; if($ProjectVersion){$m.project_version=$ProjectVersion}; $m.updated_date=Get-UndiesUtcTime; Save-Json $manifest $m; Read-Json $manifest
 }
 function Invoke-PortableVersion($Root){ $project=Join-Path $Root '.undies/project/project.json'; [pscustomobject]@{portable_version=$script:UndiesVersion;installed_version=if(Test-Path $project){(Read-Json $project).version}else{'NONE'};schema_version=$script:ConfigurationVersion} }
 function Compare-VersionText([string]$A,[string]$B){ $pa=($A -replace '-.*$','').Split('.')|ForEach-Object{[int]$_}; $pb=($B -replace '-.*$','').Split('.')|ForEach-Object{[int]$_}; for($i=0;$i -lt 3;$i++){ if($pa[$i] -lt $pb[$i]){return -1}; if($pa[$i] -gt $pb[$i]){return 1} }; return 0 }
@@ -266,9 +278,9 @@ function Invoke-PortableUpgrade($Root){
     Save-Json (Resolve-InsideRoot $Root '.undies/reports/upgrade-report.json') ([ordered]@{status='GREEN';from=$previous;to=$script:UndiesVersion;previous_core_preserved=($previous -ne 'NONE');reverse_synchronization='DISABLED'})
     [pscustomobject]@{status='GREEN';operation='SIDE_BY_SIDE_UPGRADE';from=$previous;to=$script:UndiesVersion;previous_core_preserved=($previous -ne 'NONE')}
 }
-function New-PortableSession($Root){ Install-ImmutableCore $Root 'session'|Out-Null; $dir=Resolve-InsideRoot $Root '.undies/sessions'; $project=Read-Json (Resolve-InsideRoot $Root '.undies/project/project.json'); $code=if($project.project_code){$project.project_code}else{'UND'}; $id='UND-'+$code+'-'+(Get-Date -Format yyyyMMdd)+'-'+('{0:000}' -f ((@(Get-ChildItem $dir -Filter '*.json' -ErrorAction SilentlyContinue).Count)+1)); $s=[ordered]@{session_id=$id;project_name=$project.project_name;project_code=$code;project_version=$project.version;workspace=(Resolve-Path $Root).Path;start_time_local=Get-UndiesCentralTime;start_time_utc=Get-UndiesUtcTime;end_time_local=$null;end_time_utc=$null;current_module=$null;completed_modules=@();pending_modules=@();failed_module=$null;warnings=@();resume_point='session-started';final_status='IN_PROGRESS';status='IN_PROGRESS'}; Save-Json (Join-Path $dir "$id.json") $s; $s }
-function Close-PortableSession($Root,$SessionId){ $dir=Resolve-InsideRoot $Root '.undies/sessions'; if(-not $SessionId){$active=Get-ChildItem $dir -Filter '*.json'|ForEach-Object{Read-Json $_.FullName}|Where-Object status -eq 'IN_PROGRESS'|Select-Object -First 1; if($active){$SessionId=$active.session_id}else{throw 'No active session'}}; $p=Join-Path $dir "$SessionId.json"; $s=Read-Json $p; $s.end_time_local=Get-UndiesCentralTime; $s.end_time_utc=Get-UndiesUtcTime; $s.status='COMPLETE'; $s.final_status='COMPLETE'; Save-Json $p $s; Read-Json $p }
-function New-BlueReport($Root){ Install-ImmutableCore $Root 'blue-report'|Out-Null; $text=@('========================================================','BLUE GATE - MANUAL ACTION REQUIRED','========================================================','MODULE:','UND-PORTABLE Portable bootstrap','STATUS:','BLUE','REASON:','Progress is paused for an exact operator input or collision.','REQUIRED ITEM:','Operator input or file collision decision','DEPENDENCY TYPE:','OPERATOR_INPUT','EXPECTED FORMAT:','Non-secret confirmation value','SENSITIVE:','NO','SOURCE OR RESPONSIBLE PARTY:','Human operator','MANUAL ACTION:','Provide the required input or resolve collision.','POWERSHELL ACTION:','$value = Read-Host "Required input"','VALIDATION COMMAND:','.\UNDIES.ps1 ownership -validate','SUCCESS CONDITION:','Validation returns GREEN','FAILURE CONDITION:','Remain BLUE','RESUME MODULE:','UND-PORTABLE','RESUME CHECKPOINT:','portable-blue-checkpoint','SECURITY NOTICE:','NONE','========================================================') -join [Environment]::NewLine; $path=Resolve-InsideRoot $Root '.undies/reports/portable-blue-report.md'; New-Item -ItemType Directory -Force -Path (Split-Path -Parent $path)|Out-Null; $text|Set-Content $path -Encoding UTF8; $text }
+function New-PortableSession($Root){ Assert-PortableInstalled $Root 'session-start'|Out-Null; $dir=Resolve-InsideRoot $Root '.undies/sessions'; $project=Read-Json (Resolve-InsideRoot $Root '.undies/project/project.json'); $code=if($project.project_code){$project.project_code}else{'UND'}; $id='UND-'+$code+'-'+(Get-Date -Format yyyyMMdd)+'-'+('{0:000}' -f ((@(Get-ChildItem $dir -Filter '*.json' -ErrorAction SilentlyContinue).Count)+1)); $s=[ordered]@{session_id=$id;project_name=$project.project_name;project_code=$code;project_version=$project.version;workspace=(Resolve-Path $Root).Path;start_time_local=Get-UndiesCentralTime;start_time_utc=Get-UndiesUtcTime;end_time_local=$null;end_time_utc=$null;current_module=$null;completed_modules=@();pending_modules=@();failed_module=$null;warnings=@();resume_point='session-started';final_status='IN_PROGRESS';status='IN_PROGRESS'}; Save-Json (Join-Path $dir "$id.json") $s; $s }
+function Close-PortableSession($Root,$SessionId){ Assert-PortableInstalled $Root 'session-close'|Out-Null; $dir=Resolve-InsideRoot $Root '.undies/sessions'; if(-not $SessionId){$active=Get-ChildItem $dir -Filter '*.json'|ForEach-Object{Read-Json $_.FullName}|Where-Object status -eq 'IN_PROGRESS'|Select-Object -First 1; if($active){$SessionId=$active.session_id}else{throw 'No active session'}}; $p=Join-Path $dir "$SessionId.json"; $s=Read-Json $p; $s.end_time_local=Get-UndiesCentralTime; $s.end_time_utc=Get-UndiesUtcTime; $s.status='COMPLETE'; $s.final_status='COMPLETE'; Save-Json $p $s; Read-Json $p }
+function New-BlueReport($Root){ Assert-PortableInstalled $Root 'blue-report'|Out-Null; $text=@('========================================================','BLUE GATE - MANUAL ACTION REQUIRED','========================================================','MODULE:','UND-PORTABLE Portable bootstrap','STATUS:','BLUE','REASON:','Progress is paused for an exact operator input or collision.','REQUIRED ITEM:','Operator input or file collision decision','DEPENDENCY TYPE:','OPERATOR_INPUT','EXPECTED FORMAT:','Non-secret confirmation value','SENSITIVE:','NO','SOURCE OR RESPONSIBLE PARTY:','Human operator','MANUAL ACTION:','Provide the required input or resolve collision.','POWERSHELL ACTION:','$value = Read-Host "Required input"','VALIDATION COMMAND:','.\UNDIES.ps1 ownership -validate','SUCCESS CONDITION:','Validation returns GREEN','FAILURE CONDITION:','Remain BLUE','RESUME MODULE:','UND-PORTABLE','RESUME CHECKPOINT:','portable-blue-checkpoint','SECURITY NOTICE:','NONE','========================================================') -join [Environment]::NewLine; $path=Resolve-InsideRoot $Root '.undies/reports/portable-blue-report.md'; New-Item -ItemType Directory -Force -Path (Split-Path -Parent $path)|Out-Null; $text|Set-Content $path -Encoding UTF8; $text }
 function Invoke-PortableDisable($Root){ Install-ImmutableCore $Root 'disable'|Out-Null; $state=[ordered]@{disabled=$true;disabled_utc=Get-UndiesUtcTime;reversible=$true}; Save-Json (Resolve-InsideRoot $Root '.undies/project/disabled.json') $state; $state }
 function Invoke-PortableRollback($Root){ Install-ImmutableCore $Root 'rollback'|Out-Null; $active=Read-Json (Resolve-InsideRoot $Root '.undies/active-version.json'); $plan=[ordered]@{status='GREEN';operation='ROLLBACK';active_core_version=$active.active_core_version;preview=(!$Apply);actions=@('Switch active-version pointer to validated previous core when available','Preserve host files')}; if($Preview -or -not $Apply){return $plan}; Save-Json (Resolve-InsideRoot $Root '.undies/reports/rollback-report.json') ([ordered]@{status='GREEN';active_core_version=$active.active_core_version;applied_utc=Get-UndiesUtcTime}); return [pscustomobject]@{status='GREEN';operation='ROLLBACK';validated=$true} }
 function Invoke-PortableRemove($Root){ $om=Get-OwnershipManifest $Root; $managed=if($om){@($om.managed_files|Where-Object may_be_removed -eq $true|Select-Object -ExpandProperty path)}else{@()}; $plan=[ordered]@{status='GREEN';operation='REMOVE';preview=(!$Apply);managed_files=$managed;preserve=@('host files','unknown files','.git','reports','evidence')}; if($Preview -or -not $Apply){return $plan}; foreach($rel in $managed){$p=Resolve-InsideRoot $Root $rel; if(Test-Path -LiteralPath $p){Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue}}; Save-Json (Resolve-InsideRoot $Root '.undies/reports/removal-manifest.json') ([ordered]@{removed=$managed;preserved=$plan.preserve;removed_utc=Get-UndiesUtcTime}); [pscustomobject]@{status='GREEN';operation='REMOVE';removed=$managed;preserved=$plan.preserve} }

@@ -1,5 +1,14 @@
 ﻿# Changelog
 
+## 0.3.0-alpha.2
+
+- Fixed runtime session metadata isolation for immutable-core installations.
+- Changed ordinary session and BLUE report operations to validate existing core state instead of reinstalling or refreshing deployment metadata.
+- Ensured `session-start` and `session-close` write only runtime-owned session records after installation.
+- Added no-op JSON write protection to avoid disk writes when managed metadata bytes are unchanged.
+- Documented runtime-state boundaries and the requirement that read-only commands never repair or rewrite metadata silently.
+- Added UND-024 regression coverage for tracked-file stability, host Git safety, and DIRA-style adoption fixtures.
+
 ## 0.3.0-alpha.1
 
 - Added UND-022 immutable core and project isolation architecture.

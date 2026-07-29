@@ -10,7 +10,7 @@ $engineFiles=@('src/bootstrap/Core.ps1','src/session/SessionEngine.ps1','src/mod
 foreach($f in $engineFiles){ . (Join-Path $Script:UndiesRoot $f) }
 function Show-UndiesHelp {
 @"
-UNDIES 0.3.0-alpha.1
+UNDIES 0.3.0-alpha.2
 
 Commands:
   .\UNDIES.ps1 initialize
