@@ -1,5 +1,12 @@
 ﻿# Changelog
 
+## 0.2.0-alpha.2
+
+- Added UND-021 release integrity recovery.
+- Preserved `.gitattributes` line-ending protection for release artifacts.
+- Regenerated `dist/UNDIES.ps1`, checksum, and release manifest together.
+- Added fresh-checkout and release-download checksum verification coverage.
+- Supersedes `0.2.0-alpha.1` because its public release material carried the original checksum integrity issue.
 ## 0.2.0-alpha.1
 
 - Added clean-folder portable deployment validation.
@@ -28,5 +35,6 @@
 - Added BLUE resume behavior requiring dependency validation before continuation.
 - Added BLUE gate, dependency, reporting, queue, and portable artifact tests.
 - Regenerated `dist/UNDIES.ps1`.
+
 
 

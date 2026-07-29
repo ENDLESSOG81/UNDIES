@@ -1,15 +1,15 @@
 ﻿{
     "product_name":  "UNDIES",
-    "version":  "0.2.0-alpha.1",
-    "build_date_utc":  "2026-07-29T00:46:10.9242054Z",
-    "source_commit":  "caa1aa60204e1d51cc9ff9a1bf94ad48d0b41b24",
+    "version":  "0.2.0-alpha.2",
+    "build_date_utc":  "2026-07-29T01:08:32.6593519Z",
+    "source_commit":  "43bce6e24abe971230ba1fde694225d6e0d9f749",
     "powershell_compatibility":  [
                                      "PowerShell 7 preferred",
                                      "Windows PowerShell 5.1 compatible where standard .NET APIs are available"
                                  ],
     "artifact_filename":  "UNDIES.ps1",
-    "artifact_size":  18665,
-    "sha256_checksum":  "47A5B36CE94B006BBFFB2971591C269715FD6461F22646BB0A85C1B933E6FF32",
+    "artifact_size":  18667,
+    "sha256_checksum":  "8D7EB38906FEEADA29E774A5E62B017E73BFA2DC93BFF5996EA02638213DFC81",
     "supported_deployment_modes":  [
                                        "empty-folder initialize",
                                        "existing non-Git adoption",
@@ -22,7 +22,8 @@
     "supported_upgrade_range":  [
                                     "0.1.0-alpha.1",
                                     "0.1.0-alpha.2",
-                                    "0.2.0-alpha.1"
+                                    "0.2.0-alpha.1",
+                                    "0.2.0-alpha.2"
                                 ],
     "required_dependencies":  [
                                   "PowerShell",
@@ -36,7 +37,7 @@
                               "GitHub release publication may require authenticated external tooling",
                               "project-specific test execution requires operator authorization"
                           ],
-    "test_totals":  "UND-020 module passed=15 failed=0 skipped=0; regression passed=55 failed=0 skipped=0",
+    "test_totals":  "UND-021 passed=10 failed=0 skipped=0; regression passed=55 failed=0 skipped=0",
     "pilot_result":  "UND-019 GREEN disposable DRIA clone",
     "release_status":  "alpha-prerelease"
 }
