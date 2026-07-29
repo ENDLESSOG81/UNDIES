@@ -4,7 +4,7 @@ UNDIES is a standalone, portable project governance and execution system.
 
 UNDIES is the first governance package placed into a project workspace. It establishes local project authority, module sequencing, validation gates, evidence capture, reporting, and recovery before any remote repository or cloud service is required.
 
-This foundation build is version `0.1.0-alpha.1`.
+The current alpha build is version `0.3.0-alpha.1`.
 
 ## Mission
 
@@ -12,7 +12,23 @@ UNDIES provides a portable, offline-capable governance and execution layer for p
 
 ## Boundaries
 
-UNDIES does not create GitHub repositories, add remotes, push code, deploy software, install packages, or request credentials unless a future governed module explicitly receives human authorization. This foundation build performs no GitHub operations and requires no internet access.
+UNDIES does not create GitHub repositories, add remotes, push code, deploy software, install packages, or request credentials unless a governed module explicitly receives human authorization. Portable operation requires no internet access after the release artifact is available.
+
+## Immutable Core And Isolation
+
+UNDIES uses one-way deployment:
+
+```text
+AUTHORITATIVE UNDIES SOURCE
+        -> package and release
+IMMUTABLE RELEASE ARTIFACT
+        -> controlled installation
+HOST PROJECT UNDIES INSTALLATION
+```
+
+Host projects do not write back to the UNDIES source repository. Installed core files live under `.undies/core/<VERSION>/`; the root `UNDIES.ps1` launcher dispatches only to the active local core recorded in `.undies/active-version.json`. Project configuration lives under `.undies/project/`, extensions under `.undies/extensions/`, and runtime state under runtime-owned directories.
+
+Unknown files are host-owned. Filename collisions fail closed with BLUE instead of being overwritten silently.
 
 ## Quick Start
 
@@ -20,6 +36,9 @@ UNDIES does not create GitHub repositories, add remotes, push code, deploy softw
 .\UNDIES.ps1 help
 .\UNDIES.ps1 doctor
 .\UNDIES.ps1 initialize
+.\UNDIES.ps1 import -preview
+.\UNDIES.ps1 ownership -validate
+.\UNDIES.ps1 core-status
 .\UNDIES.ps1 validate
 ```
 

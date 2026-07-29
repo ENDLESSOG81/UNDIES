@@ -14,11 +14,12 @@ try {
     $applied=& (Join-Path $HostDir 'UNDIES.ps1') upgrade -apply | ConvertFrom-Json
     Assert ($applied.status -eq 'GREEN' -and (Test-Path $applied.backup)) 'upgrade apply failed'
     $v=& (Join-Path $HostDir 'UNDIES.ps1') version | ConvertFrom-Json
-    Assert ($v.installed_version -eq '0.2.0-alpha.2') 'version not upgraded'
+    Assert ($v.installed_version -eq '0.3.0-alpha.1') 'version not upgraded'
     $m=Get-Content $manifest -Raw | ConvertFrom-Json; $m.version='9.0.0'; $m | ConvertTo-Json -Depth 20 | Set-Content $manifest -Encoding UTF8
     $newer=& (Join-Path $HostDir 'UNDIES.ps1') upgrade -check | ConvertFrom-Json
     Assert ($newer.status -eq 'BLUE') 'newer version did not pause BLUE'
     'UND-016_TEST passed=6 failed=0 skipped=0'
 } finally { if(Test-Path $HostDir){ Remove-Item -LiteralPath $HostDir -Recurse -Force } }
+
 
 

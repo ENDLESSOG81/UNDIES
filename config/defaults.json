@@ -2,7 +2,7 @@
     "configuration_version":  "0.1.0",
     "project_name":  "UNDIES",
     "project_code":  "UND",
-    "version":  "0.2.0-alpha.2",
+    "version":  "0.3.0-alpha.1",
     "build":  "repository foundation prototype",
     "repository_state":  "LOCAL ONLY",
     "remote_state":  "https://github.com/ENDLESSOG81/UNDIES.git",
@@ -25,5 +25,6 @@
                                   "WAITING_FOR_EXTERNAL_DEPENDENCY":  "BLUE"
                               }
 }
+
 
 

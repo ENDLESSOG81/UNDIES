@@ -14,7 +14,7 @@ try {
     $hash1 = (Get-FileHash -LiteralPath $artifact -Algorithm SHA256).Hash
     Assert ((Get-Content -LiteralPath $checksumFile -Raw).Trim() -eq $hash1) 'checksum mismatch'
     $manifest = Get-Content -LiteralPath $manifestFile -Raw | ConvertFrom-Json
-    Assert ($manifest.version -eq '0.2.0-alpha.2' -and $manifest.sha256_checksum -eq $hash1) 'manifest invalid'
+    Assert ($manifest.version -eq '0.3.0-alpha.1' -and $manifest.sha256_checksum -eq $hash1) 'manifest invalid'
     & (Join-Path $RepoRoot 'build/package-undies.ps1') -TestTotals 'UND-020 reproducibility check' | Out-Null
     $hash2 = (Get-FileHash -LiteralPath $artifact -Algorithm SHA256).Hash
     Assert ($hash1 -eq $hash2) 'artifact build not reproducible'
@@ -23,7 +23,7 @@ try {
     Copy-Item -LiteralPath $artifact -Destination $empty
     $init = & (Join-Path $empty 'UNDIES.ps1') initialize | ConvertFrom-Json
     $doctor = & (Join-Path $empty 'UNDIES.ps1') doctor | ConvertFrom-Json
-    Assert ($init.version -eq '0.2.0-alpha.2' -and $doctor.status -eq 'GREEN') 'empty initialization failed'
+    Assert ($init.version -eq '0.3.0-alpha.1' -and $doctor.status -eq 'GREEN') 'empty initialization failed'
 
     $nonGit = New-TempDir 'undies-020-nongit'; $Roots += $nonGit
     'keep' | Set-Content -LiteralPath (Join-Path $nonGit 'host.txt') -NoNewline
@@ -56,7 +56,7 @@ try {
     $m | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
     $upgrade = & (Join-Path $old 'UNDIES.ps1') upgrade -apply | ConvertFrom-Json
     $version = & (Join-Path $old 'UNDIES.ps1') version | ConvertFrom-Json
-    Assert ($upgrade.status -eq 'GREEN' -and $version.installed_version -eq '0.2.0-alpha.2') 'upgrade failed'
+    Assert ($upgrade.status -eq 'GREEN' -and $version.installed_version -eq '0.3.0-alpha.1') 'upgrade failed'
 
     Remove-Item -LiteralPath (Join-Path $old '.undies/governance/UNDIES_CHARTER.md') -Force
     $repair = & (Join-Path $old 'UNDIES.ps1') repair -apply | ConvertFrom-Json
@@ -76,4 +76,5 @@ try {
 } finally {
     foreach($r in $Roots){ if(Test-Path -LiteralPath $r){ Remove-Item -LiteralPath $r -Recurse -Force -ErrorAction SilentlyContinue } }
 }
+
 

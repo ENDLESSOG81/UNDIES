@@ -1,4 +1,4 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path))
 function Assert($Condition,$Message){ if(-not $Condition){ throw $Message } }
 $Fresh = Join-Path $env:TEMP ('undies-021-fresh-' + [guid]::NewGuid().ToString('N'))
@@ -16,7 +16,7 @@ try {
     $checksum = (Get-Content -LiteralPath $checksumFile -Raw).Trim()
     $manifest = Get-Content -LiteralPath $manifestFile -Raw | ConvertFrom-Json
     Assert ($hash -eq $checksum) 'local checksum file mismatch'
-    Assert ($manifest.version -eq '0.2.0-alpha.2') 'manifest version mismatch'
+    Assert ($manifest.version -eq '0.3.0-alpha.1') 'manifest version mismatch'
     Assert ($manifest.sha256_checksum -eq $hash) 'manifest checksum mismatch'
 
     git clone --no-local $RepoRoot $Fresh | Out-Null
@@ -27,7 +27,7 @@ try {
     New-Item -ItemType Directory -Force -Path $freshInit | Out-Null
     Copy-Item -LiteralPath (Join-Path $Fresh 'dist/UNDIES.ps1') -Destination $freshInit
     $init = & (Join-Path $freshInit 'UNDIES.ps1') initialize | ConvertFrom-Json
-    Assert ($init.version -eq '0.2.0-alpha.2') 'fresh checkout artifact initialize failed'
+    Assert ($init.version -eq '0.3.0-alpha.1') 'fresh checkout artifact initialize failed'
     Remove-Item -LiteralPath $freshInit -Recurse -Force
 
     New-Item -ItemType Directory -Force -Path $Download | Out-Null
@@ -40,3 +40,4 @@ try {
 } finally {
     foreach($p in @($Fresh,$Download)){ if(Test-Path -LiteralPath $p){ Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction SilentlyContinue } }
 }
+

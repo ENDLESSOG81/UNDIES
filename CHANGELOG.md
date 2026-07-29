@@ -1,5 +1,15 @@
 ﻿# Changelog
 
+## 0.3.0-alpha.1
+
+- Added UND-022 immutable core and project isolation architecture.
+- Added one-way import semantics from validated release artifact to host project only.
+- Added versioned `.undies/core/<VERSION>/` installation with active-version dispatch.
+- Added ownership manifest generation and validation.
+- Added collision fail-closed BLUE behavior for unknown or modified managed files.
+- Added side-by-side core upgrade behavior and active-version rollback protection.
+- Added project extension and runtime separation from immutable core.
+- Added path containment and host Git safety validation tests.
 ## 0.2.0-alpha.2
 
 - Added UND-021 release integrity recovery.
@@ -35,6 +45,7 @@
 - Added BLUE resume behavior requiring dependency validation before continuation.
 - Added BLUE gate, dependency, reporting, queue, and portable artifact tests.
 - Regenerated `dist/UNDIES.ps1`.
+
 
 
 

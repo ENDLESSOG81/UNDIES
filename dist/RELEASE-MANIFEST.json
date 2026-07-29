@@ -1,15 +1,15 @@
 ﻿{
     "product_name":  "UNDIES",
-    "version":  "0.2.0-alpha.2",
-    "build_date_utc":  "2026-07-29T01:08:32.6593519Z",
-    "source_commit":  "43bce6e24abe971230ba1fde694225d6e0d9f749",
+    "version":  "0.3.0-alpha.1",
+    "build_date_utc":  "2026-07-29T06:43:54.1726481Z",
+    "source_commit":  "69f8795a47f3d01cce0b6b4b09f2aa9b23a1697a",
     "powershell_compatibility":  [
                                      "PowerShell 7 preferred",
                                      "Windows PowerShell 5.1 compatible where standard .NET APIs are available"
                                  ],
     "artifact_filename":  "UNDIES.ps1",
-    "artifact_size":  18667,
-    "sha256_checksum":  "8D7EB38906FEEADA29E774A5E62B017E73BFA2DC93BFF5996EA02638213DFC81",
+    "artifact_size":  31630,
+    "sha256_checksum":  "EADF56CC494589EBFBEBE57EEC739198E9E8046E897BF93A43CEF7098768F905",
     "supported_deployment_modes":  [
                                        "empty-folder initialize",
                                        "existing non-Git adoption",
@@ -23,7 +23,8 @@
                                     "0.1.0-alpha.1",
                                     "0.1.0-alpha.2",
                                     "0.2.0-alpha.1",
-                                    "0.2.0-alpha.2"
+                                    "0.2.0-alpha.2",
+                                    "0.3.0-alpha.1"
                                 ],
     "required_dependencies":  [
                                   "PowerShell",
@@ -37,7 +38,7 @@
                               "GitHub release publication may require authenticated external tooling",
                               "project-specific test execution requires operator authorization"
                           ],
-    "test_totals":  "UND-021 passed=10 failed=0 skipped=0; regression passed=55 failed=0 skipped=0",
+    "test_totals":  "UND-022 passed=36 failed=0 skipped=0; regression passed=55 failed=0 skipped=0",
     "pilot_result":  "UND-019 GREEN disposable DRIA clone",
     "release_status":  "alpha-prerelease"
 }
