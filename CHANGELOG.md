@@ -1,5 +1,12 @@
 ﻿# Changelog
 
+## Unreleased
+
+- Validated UND-019 controlled real-project pilot against a disposable DRIA clone.
+- Corrected portable adoption so supplied project identity is persisted before session creation.
+- Added UND-019 pilot coverage for preview, dry-run, adoption, BLUE resume validation, rollback, removal, and Git isolation.
+- Regenerated `dist/UNDIES.ps1`.
+
 ## 0.1.0-alpha.1
 
 - Established UNDIES constitutional foundation.
@@ -15,3 +22,4 @@
 - Added BLUE resume behavior requiring dependency validation before continuation.
 - Added BLUE gate, dependency, reporting, queue, and portable artifact tests.
 - Regenerated `dist/UNDIES.ps1`.
+
