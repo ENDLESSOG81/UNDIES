@@ -1,0 +1,28 @@
+project:
+  name: "<PROJECT_NAME>"
+  code: "<PROJECT_CODE>"
+  repository: "<PROJECT_REPOSITORY_URL_OR_NONE>"
+undies:
+  version: "<UNDIES_VERSION>"
+  source_commit: "<UNDIES_SOURCE_COMMIT>"
+  protocol_status: "STERILE_REFERENCE"
+governance:
+  gates:
+    - GREEN
+    - YELLOW
+    - BLUE
+    - RED
+    - BLOCKED
+runtime:
+  untracked_paths:
+    - ".undies/reports/"
+    - ".undies/sessions/"
+    - ".undies/backups/"
+    - ".undies/evidence/"
+isolation:
+  source_dependency: "NONE"
+  reverse_synchronization: "DISABLED"
+  copied_core: false
+validation:
+  blue_gate_required: true
+  fail_closed: true

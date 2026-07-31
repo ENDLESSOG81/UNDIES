@@ -1,5 +1,13 @@
 ﻿# Changelog
 
+## Unreleased
+
+- Added the sterile governance adoption model for neutral project references.
+- Defined `UNDIES.md` and `.undies/project.yaml` as the current project-facing adoption layer.
+- Documented transition away from copied embedded-core adoption for new projects.
+- Added migration guidance for historical embedded-core adoptions.
+- Added sterility coverage to prevent project-specific contamination in normative adoption files.
+
 ## 0.3.0-alpha.2
 
 - Fixed runtime session metadata isolation for immutable-core installations.

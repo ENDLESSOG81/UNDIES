@@ -1,54 +1,102 @@
-﻿# UNDIES
+# UNDIES
 
-UNDIES is a standalone, portable project governance and execution system.
+UNDIES is a sterile, reusable governance standard for project work.
 
-UNDIES is the first governance package placed into a project workspace. It establishes local project authority, module sequencing, validation gates, evidence capture, reporting, and recovery before any remote repository or cloud service is required.
+The authoritative UNDIES repository defines the protocol, gate model,
+session rules, evidence expectations, validation policy, and adoption
+templates. Adopted projects do not receive a copied UNDIES core. They
+receive a neutral reference layer that points back to an approved UNDIES
+version and source commit.
 
-The current alpha build is version `0.3.0-alpha.2`.
+Current repository version: `0.3.0-alpha.2`.
 
-## Mission
+## Sterile Adoption Model
 
-UNDIES provides a portable, offline-capable governance and execution layer for projects. A project operator places `UNDIES.ps1` in a project folder before module construction begins, runs initialization, and then executes governed modules one at a time.
-
-## Boundaries
-
-UNDIES does not create GitHub repositories, add remotes, push code, deploy software, install packages, or request credentials unless a governed module explicitly receives human authorization. Portable operation requires no internet access after the release artifact is available.
-
-## Immutable Core And Isolation
-
-UNDIES uses one-way deployment:
+A governed project should contain only the project-local reference files
+needed to declare that it follows UNDIES. The required machine-readable
+project file is `.undies/project.yaml`.
 
 ```text
-AUTHORITATIVE UNDIES SOURCE
-        -> package and release
-IMMUTABLE RELEASE ARTIFACT
-        -> controlled installation
-HOST PROJECT UNDIES INSTALLATION
+<PROJECT>/
+├── UNDIES.md
+└── .undies/
+    └── project.yaml
 ```
 
-Host projects do not write back to the UNDIES source repository. Installed core files live under `.undies/core/<VERSION>/`; the root `UNDIES.ps1` launcher dispatches only to the active local core recorded in `.undies/active-version.json`. Project configuration lives under `.undies/project/`, extensions under `.undies/extensions/`, and runtime state under runtime-owned directories.
+The following runtime folders may exist locally and should normally
+remain untracked:
 
-Unknown files are host-owned. Filename collisions fail closed with BLUE instead of being overwritten silently.
+```text
+.undies/reports/
+.undies/sessions/
+.undies/backups/
+.undies/evidence/
+```
 
-Session and read-only commands validate existing metadata without rewriting tracked deployment files. Runtime records belong under `.undies/runtime/`, `.undies/sessions/`, `.undies/evidence/`, `.undies/reports/`, and `.undies/recovery/`.
+The UNDIES core, tests, build scripts, and release machinery remain in
+this source repository. A project pins the protocol by version and
+source commit; it does not become a writable copy of UNDIES.
 
-## Quick Start
+## Authority Boundary
+
+UNDIES defines governance. A project keeps ownership of its own source,
+architecture, runtime, credentials, services, and release decisions.
+
+UNDIES must not:
+
+- overwrite project files silently
+- copy project runtime records back into this repository
+- require the UNDIES development workspace for normal project operation
+- add reverse synchronization
+- install project-specific systems by default
+- expose secrets in reports or evidence
+
+Unknown project files are project-owned. Collisions, missing authority,
+or required operator choices pause with BLUE rather than being resolved
+destructively.
+
+## Gate Model
+
+UNDIES uses five canonical gates:
+
+- `GREEN`: mandatory acceptance criteria passed.
+- `YELLOW`: completed with a warning or limitation.
+- `BLUE`: safe pause for exact external input, authorization, resource,
+  credential, configuration value, service action, or operator decision.
+- `RED`: failure or unsafe continuation.
+- `BLOCKED`: foundational preflight prevents work from beginning.
+
+`WAITING_FOR_EXTERNAL_DEPENDENCY` remains a deprecated historical alias
+for `BLUE`. New records should use `BLUE`.
+
+## Normative Documents
+
+- [Sterile Governance](docs/governance/STERILE-GOVERNANCE.md)
+- [Adoption Reference Model](docs/governance/ADOPTION-REFERENCE-MODEL.md)
+- [Embedded Core Transition](docs/operations/EMBEDDED-CORE-TRANSITION.md)
+- [Migrating Embedded Adoptions](docs/operations/MIGRATING-EMBEDDED-ADOPTIONS.md)
+- [Validation Policy](docs/operations/VALIDATION-POLICY.md)
+
+## Adoption Templates
+
+- [Project UNDIES.md Template](templates/adoption/UNDIES.md)
+- [Project YAML Template](templates/adoption/project.yaml)
+- [Project YAML Schema](schemas/adoption-project.schema.json)
+
+Historical release notes, reports, and compatibility documents may
+mention earlier project pilots or older embedded-core behavior. Those
+records are evidence, not the current normative adoption model.
+
+## Validation
+
+Run the current repository tests from PowerShell:
 
 ```powershell
-.\UNDIES.ps1 help
-.\UNDIES.ps1 doctor
-.\UNDIES.ps1 initialize
-.\UNDIES.ps1 import -preview
-.\UNDIES.ps1 ownership -validate
-.\UNDIES.ps1 core-status
-.\UNDIES.ps1 validate
+.\tests\foundation\UND-SG-sterility.Tests.ps1
+.\tests\run-tests.ps1 -Quiet
 ```
 
-PowerShell 7 is preferred. Windows PowerShell 5.1 is supported for the foundation features that use standard cmdlets and .NET APIs.
-
-
-## BLUE Gate Restoration
-
-BLUE is the canonical UNDIES safe-pause gate. BLUE means execution reached a safe checkpoint and cannot continue until an exact dependency, authorization, decision, resource, credential, configuration value, external service action, or operator input is provided and validated. BLUE is not RED and is not BLOCKED: RED is a failure after execution, while BLOCKED prevents implementation from beginning.
-
-`WAITING_FOR_EXTERNAL_DEPENDENCY` is a deprecated legacy alias. Historical records using it remain readable and normalize internally to BLUE. New records must write BLUE.
+The sterility test verifies that the normative adoption layer does not
+contain project-specific names, local machine paths, provider bindings,
+or instructions that would couple adopted projects back to this source
+repository.

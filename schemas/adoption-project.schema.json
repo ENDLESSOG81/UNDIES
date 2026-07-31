@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://undies.local/schemas/adoption-project.schema.json",
+  "title": "UNDIES Sterile Adoption Project Reference",
+  "type": "object",
+  "required": ["project", "undies", "governance", "runtime", "isolation", "validation"],
+  "properties": {
+    "project": {
+      "type": "object",
+      "required": ["name", "code"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "code": { "type": "string", "minLength": 2 },
+        "repository": { "type": "string" }
+      }
+    },
+    "undies": {
+      "type": "object",
+      "required": ["version", "source_commit", "protocol_status"],
+      "properties": {
+        "version": { "type": "string", "minLength": 1 },
+        "source_commit": { "type": "string", "minLength": 7 },
+        "protocol_status": { "const": "STERILE_REFERENCE" }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "required": ["gates"],
+      "properties": {
+        "gates": {
+          "type": "array",
+          "items": { "enum": ["GREEN", "YELLOW", "BLUE", "RED", "BLOCKED"] },
+          "minItems": 5,
+          "uniqueItems": true
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["untracked_paths"],
+      "properties": {
+        "untracked_paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      }
+    },
+    "isolation": {
+      "type": "object",
+      "required": ["source_dependency", "reverse_synchronization", "copied_core"],
+      "properties": {
+        "source_dependency": { "const": "NONE" },
+        "reverse_synchronization": { "const": "DISABLED" },
+        "copied_core": { "const": false }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["blue_gate_required", "fail_closed"],
+      "properties": {
+        "blue_gate_required": { "const": true },
+        "fail_closed": { "const": true }
+      }
+    }
+  },
+  "additionalProperties": false
+}
